@@ -118,7 +118,7 @@ model, web search, references, or provider credits.
 
 ## Completed phase 6: Qwen (Ollama) provider integration
 
-The implementation replaced EcoAPI with a local Qwen model via Ollama. The typed adapter now uses the `ollama` Python library to communicate with a locally-running Ollama server at `http://localhost:11434`. This eliminates external API dependencies and keeps all data on-premises.
+The implementation replaced Qwen via Ollama with a local Qwen model via Ollama. The typed adapter now uses the `ollama` Python library to communicate with a locally-running Ollama server at `http://localhost:11434`. This eliminates external API dependencies and keeps all data on-premises.
 
 The tested model (`qwen3.6:27b`) accepts structured JSON output via prompt engineering. The adapter validates responses and normalizes errors, timeouts, and retryability. Model configuration is server-only via environment variables.
 
@@ -128,7 +128,7 @@ The worker now uses `QwenModuleGenerator` for real module generation. The fake g
 
 The Qwen (Ollama) provider now powers real module generation when activated by configuration. A prompt builder constructs system and user messages that embed the `ModulePlan` JSON schema and depth-specific lesson targets. The generator extracts JSON from potential markdown fences, validates every response with Pydantic, and attempts bounded repair by re-prompting the model with its validation errors.
 
-Activation requires `AI_SERVICE_USE_REAL_MODULE_GENERATOR=true` and a configured `AI_SERVICE_QWEN_MODEL`. When the model is not configured or Ollama is unavailable, the service falls back to `FakeModuleGenerator` and logs the active generator at startup. The Ollama client is properly initialized on application startup.
+Activation requires `AI_SERVICE_USE_REAL_MODULE_GENERATOR=true` and a configured `AI_SERVICE_OLLAMA_MODEL`. When the model is not configured or Ollama is unavailable, the service falls back to `FakeModuleGenerator` and logs the active generator at startup. The Ollama client is properly initialized on application startup.
 
 Because the local model does not enforce strict JSON schema, the implementation never relies on model-side enforcement. All deterministic tests use mock transports and never contact the real model.
 

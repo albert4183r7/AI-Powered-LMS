@@ -78,7 +78,7 @@ Edit `.env`:
 DATABASE_URL="file:./db/lumen.db"
 SESSION_SECRET="your-secure-session-secret"
 AI_SERVICE_BASE_URL="http://localhost:8000"
-AI_SERVICE_INTERNAL_API_KEY="your-internal-api-key"
+# AI_SERVICE_INTERNAL_API_KEY (optional for local dev)="your-internal-api-key"
 ```
 
 **AI Service `.env` (ai-service/.env):**
@@ -89,12 +89,12 @@ cp .env.example .env
 Edit `ai-service/.env`:
 ```dotenv
 AI_SERVICE_ENVIRONMENT="development"
-AI_SERVICE_INTERNAL_API_KEY="your-internal-api-key"
+# AI_SERVICE_INTERNAL_API_KEY (optional for local dev)="your-internal-api-key"
 
 # Local Ollama Configuration (NO API KEY NEEDED)
 AI_SERVICE_USE_REAL_MODULE_GENERATOR="true"
-AI_SERVICE_QWEN_MODEL="qwen3.6:27b"
-AI_SERVICE_REQUEST_TIMEOUT_SECONDS="120"
+AI_SERVICE_OLLAMA_MODEL="qwen3.6:27b"
+AI_SERVICE_OLLAMA_REQUEST_TIMEOUT_SECONDS="120"
 
 # RAG Configuration
 AI_SERVICE_EMBEDDING_TEXT_MODEL="intfloat/multilingual-e5-small"
@@ -146,18 +146,18 @@ python app/jobs/worker.py
 DATABASE_URL="file:./db/lumen.db"
 SESSION_SECRET="your-secure-session-secret"
 AI_SERVICE_BASE_URL="http://localhost:8000"
-AI_SERVICE_INTERNAL_API_KEY="your-internal-api-key"
+# AI_SERVICE_INTERNAL_API_KEY (optional for local dev)="your-internal-api-key"
 ```
 
 ### `ai-service/.env` (AI Service)
 ```dotenv
 AI_SERVICE_ENVIRONMENT="development"
-AI_SERVICE_INTERNAL_API_KEY="your-internal-api-key"
+# AI_SERVICE_INTERNAL_API_KEY (optional for local dev)="your-internal-api-key"
 
 # Local Ollama Configuration (NO API KEY NEEDED)
 AI_SERVICE_USE_REAL_MODULE_GENERATOR="true"
-AI_SERVICE_QWEN_MODEL="qwen3.6:27b"
-AI_SERVICE_REQUEST_TIMEOUT_SECONDS="120"
+AI_SERVICE_OLLAMA_MODEL="qwen3.6:27b"
+AI_SERVICE_OLLAMA_REQUEST_TIMEOUT_SECONDS="120"
 
 # RAG Configuration
 AI_SERVICE_EMBEDDING_TEXT_MODEL="intfloat/multilingual-e5-small"
@@ -340,18 +340,18 @@ AI_SERVICE_ENVIRONMENT="production"
 SESSION_SECRET="<secure-random-string>"
 DATABASE_URL="file:/path/to/production.db"
 AI_SERVICE_BASE_URL="http://localhost:8000"
-AI_SERVICE_INTERNAL_API_KEY="<secure-random-string>"
+# AI_SERVICE_INTERNAL_API_KEY (optional for local dev)="<secure-random-string>"
 ```
 
 **AI Service (ai-service/.env):**
 ```dotenv
 AI_SERVICE_ENVIRONMENT="production"
-AI_SERVICE_INTERNAL_API_KEY="<secure-random-string>"
+# AI_SERVICE_INTERNAL_API_KEY (optional for local dev)="<secure-random-string>"
 
 # Local Ollama Configuration
 AI_SERVICE_USE_REAL_MODULE_GENERATOR="true"
-AI_SERVICE_QWEN_MODEL="qwen3.6:27b"
-AI_SERVICE_REQUEST_TIMEOUT_SECONDS="120"
+AI_SERVICE_OLLAMA_MODEL="qwen3.6:27b"
+AI_SERVICE_OLLAMA_REQUEST_TIMEOUT_SECONDS="120"
 
 # RAG Configuration
 AI_SERVICE_EMBEDDING_TEXT_MODEL="intfloat/multilingual-e5-small"
@@ -368,7 +368,7 @@ AI_SERVICE_WEB_SEARCH_ENABLED="true"
 
 ### Security Considerations
 - Use HTTPS in production (configure reverse proxy like Nginx)
-- Rotate `AI_SERVICE_INTERNAL_API_KEY` regularly
+- Rotate `# AI_SERVICE_INTERNAL_API_KEY (optional for local dev)` regularly
 - Implement rate limiting at the reverse proxy level
 - Enable CORS only for trusted domains
 - Store secrets in environment variables or secret management systems

@@ -1,35 +1,21 @@
 ```
-# Documentation backup/deprecated files
-docs/*.md.DEPRECATED
-
-# Logs and temp files
-*.log
-*.tmp
-
-# Environment
+# Environment variables
 .env
 .env.local
 .env.*
 
-# Editors
-.vscode/
-.idea/
+# Dependencies
+.venv/
+venv/
+node_modules/
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.py~
-*.py.class
 .Python
-venv/
-.venv/
-.env
-.env.local
-.env.*
-.ENV
-.python-version
+env/
 pip-log.txt
 pip-delete-this-directory.txt
 .tox/
@@ -40,10 +26,36 @@ nosetests.xml
 coverage.xml
 *.cover
 *.log
-.git/refs/heads/*
-!.git/keep
+*.pot
+*.pyc
+*.pyo
 .pytest_cache/
 .mypy_cache/
-.hypothesis/
-.coverage*
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Coverage
+coverage/
+htmlcov/
+
+# Temporary files
+*.tmp
+*~
 ```

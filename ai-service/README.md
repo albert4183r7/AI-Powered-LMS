@@ -63,11 +63,11 @@ AI_SERVICE_WORKER_POLL_INTERVAL_SECONDS="0.2"
 
 # Local Ollama Configuration (NO API KEY NEEDED)
 AI_SERVICE_USE_REAL_MODULE_GENERATOR="true"
-AI_SERVICE_QWEN_MODEL="qwen3.6:27b"
+AI_SERVICE_OLLAMA_MODEL="qwen3.6:27b"
 AI_SERVICE_REQUEST_TIMEOUT_SECONDS="120"
 
 # Internal API Security
-AI_SERVICE_INTERNAL_API_KEY="your-internal-api-key"
+# AI_SERVICE_INTERNAL_API_KEY (optional)="your-internal-api-key"
 
 # RAG Configuration
 AI_SERVICE_EMBEDDING_TEXT_MODEL="intfloat/multilingual-e5-small"

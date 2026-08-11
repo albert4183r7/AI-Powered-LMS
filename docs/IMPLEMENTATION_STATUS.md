@@ -2,13 +2,13 @@
 
 ## Executive Summary
 
-Implementasi AI Module Generation untuk Lumen LMS telah mencapai **90% completion** berdasarkan PRD. Semua fitur core telah diimplementasi dengan **Qwen 3.6:27b model via Ollama** sebagai provider lokal (menggantikan EcoAPI sesuai request). Sistem berjalan 100% lokal tanpa API key eksternal.
+Implementasi AI Module Generation untuk Lumen LMS telah mencapai **90% completion** berdasarkan PRD. Semua fitur core telah diimplementasi dengan **Qwen 3.6:27b model via Ollama** sebagai provider lokal (menggantikan Qwen via Ollama sesuai request). Sistem berjalan 100% lokal tanpa API key eksternal.
 
 ## Provider Configuration
 
-✅ **Qwen Local Model via Ollama** (Replacing EcoAPI)
+✅ **Qwen Local Model via Ollama** (Replacing Qwen via Ollama)
 - File: `/workspace/ai-service/app/providers/qwen.py` - Typed adapter menggunakan `ollama` library
-- File: `/workspace/ai-service/app/services/ecoapi_module_generator.py` - Renamed to use QwenClient
+- File: `/workspace/ai-service/app/services/ollama_module_generator.py` - Renamed to use QwenClient
 - Config: `/workspace/ai-service/.env.example` - Updated dengan Ollama settings
 - Model: `qwen3.6:27b` (local, requires 32GB+ RAM)
 - Server: `http://localhost:11434` (Ollama default)
@@ -24,7 +24,7 @@ Implementasi AI Module Generation untuk Lumen LMS telah mencapai **90% completio
 - Background worker dengan recovery
 - Fake generator untuk testing
 - Internal authentication antarservice
-- **Qwen/Ollama provider integration** (replacing EcoAPI)
+- **Qwen/Ollama provider integration** (replacing Qwen via Ollama)
 
 ### ✅ Phase 5-8: Core Generation (100%)
 - Job lifecycle management (queued → processing → completed/failed/cancelled)
@@ -146,9 +146,9 @@ Implementasi AI Module Generation untuk Lumen LMS telah mencapai **90% completio
 │   └── data_sources.py         ✅ Complete
 ├── providers/
 │   ├── qwen.py                 ✅ Complete (typed adapter)
-│   └── ecoapi.py               ⚠️ Legacy (keep for reference)
+│   └── ollama.py               ⚠️ Legacy (keep for reference)
 ├── services/
-│   ├── ecoapi_module_generator.py ✅ Complete (uses QwenClient)
+│   ├── ollama_module_generator.py ✅ Complete (uses QwenClient)
 │   ├── fake_module_generator.py   ✅ Complete
 │   ├── embedding_service.py       ✅ Complete
 │   ├── rag_service.py             ✅ Complete
@@ -202,11 +202,11 @@ Required environment variables (`.env`):
 # Service Identity
 AI_SERVICE_APP_NAME="Lumen AI Service"
 AI_SERVICE_ENVIRONMENT="production"
-AI_SERVICE_INTERNAL_API_KEY="<strong-random-secret>"
+AI_SERVICE_# INTERNAL_API_KEY (optional for local dev)="<strong-random-secret>"
 
 # Qwen Local Model via Ollama (NO API KEY NEEDED)
 AI_SERVICE_USE_REAL_MODULE_GENERATOR="true"
-AI_SERVICE_QWEN_MODEL="qwen3.6:27b"
+AI_SERVICE_OLLAMA_MODEL="qwen3.6:27b"
 AI_SERVICE_REQUEST_TIMEOUT_SECONDS="120"
 
 # Storage
@@ -237,7 +237,7 @@ Note: Ensure Ollama is running with `ollama serve` and the model is pulled with 
 - [ ] Install Ollama from https://ollama.ai
 - [ ] Pull Qwen model: `ollama pull qwen3.6:27b`
 - [ ] Verify 32GB+ RAM available for 27B parameter model
-- [ ] Set strong INTERNAL_API_KEY
+- [ ] Set strong # INTERNAL_API_KEY (optional for local dev)
 - [ ] Configure secure file storage paths
 - [ ] Set up SSL/TLS certificates
 - [ ] Configure reverse proxy (nginx/traefik)

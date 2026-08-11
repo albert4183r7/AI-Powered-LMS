@@ -72,7 +72,7 @@ Add to `/workspace/ai-service/.env`:
 AI_SERVICE_USE_REAL_MODULE_GENERATOR="true"
 
 # Qwen model name (must match ollama pull)
-AI_SERVICE_QWEN_MODEL="qwen3.6:27b"
+AI_SERVICE_OLLAMA_MODEL="qwen3.6:27b"
 
 # Request timeout (seconds) - 27B models can be slow
 AI_SERVICE_REQUEST_TIMEOUT_SECONDS="120"
@@ -126,21 +126,21 @@ ollama pull qwen2.5:7b
 
 Update `.env`:
 ```bash
-AI_SERVICE_QWEN_MODEL="qwen2.5:7b"
+AI_SERVICE_OLLAMA_MODEL="qwen2.5:7b"
 ```
 
 ## Migration from EcoAPI
 
 ### Before (EcoAPI)
 ```bash
-AI_SERVICE_QWEN_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
-AI_SERVICE_QWEN_API_KEY="sk-xxx"
-AI_SERVICE_QWEN_CHAT_MODEL="qwen-plus"
+# AI_SERVICE_QWEN_BASE_URL (deprecated)="https://dashscope.aliyuncs.com/compatible-mode/v1"
+# AI_SERVICE_QWEN_API_KEY (deprecated)="sk-xxx"
+# AI_SERVICE_QWEN_CHAT_MODEL (deprecated)="qwen-plus"
 ```
 
 ### After (Ollama Local)
 ```bash
-AI_SERVICE_QWEN_MODEL="qwen3.6:27b"
+AI_SERVICE_OLLAMA_MODEL="qwen3.6:27b"
 AI_SERVICE_REQUEST_TIMEOUT_SECONDS="120"
 # No base URL needed (defaults to localhost:11434)
 # No API key needed

@@ -37,8 +37,8 @@ def _build_module_generator(
     if ai_service_settings.use_real_module_generator:
         # Use local Qwen model via Ollama (no API key needed)
         qwen_client = QwenClient(
-            model=ai_service_settings.qwen_model,
-            timeout_seconds=ai_service_settings.qwen_request_timeout_seconds,
+            model=ai_service_settings.ollama_model,
+            timeout_seconds=ai_service_settings.ollama_request_timeout_seconds,
         )
         LOGGER.info("Module generator: QwenModuleGenerator (local Ollama provider).")
         return QwenModuleGenerator(qwen_client=qwen_client), qwen_client
