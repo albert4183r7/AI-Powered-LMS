@@ -20,10 +20,13 @@ class AiServiceSettings(BaseSettings):
     worker_poll_interval_seconds: float = Field(default=0.2, gt=0, le=5)
     fake_generation_delay_seconds: float = Field(default=0.15, ge=0, le=5)
     use_real_module_generator: bool = False
-    ecoapi_base_url: str = "https://www.ecoapi.ai/v1"
-    ecoapi_api_key: SecretStr | None = None
-    ecoapi_chat_model: str = "gpt-5.6-sol"
-    ecoapi_request_timeout_seconds: float = Field(default=60, gt=0, le=300)
+    
+    # Qwen API Configuration (replaces EcoAPI)
+    qwen_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    qwen_api_key: SecretStr | None = None
+    qwen_chat_model: str = "qwen-plus"
+    qwen_request_timeout_seconds: float = Field(default=60, gt=0, le=300)
+    
     internal_api_key: SecretStr = SecretStr(
         "local-development-internal-key-change-before-production",
     )

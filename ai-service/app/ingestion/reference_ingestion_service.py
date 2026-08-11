@@ -1,4 +1,7 @@
-"""Orchestrate the full reference file ingestion pipeline."""
+"""Orchestrate the full reference file ingestion pipeline.
+
+This service now supports Visual RAG by ingesting images with CLIP embeddings.
+"""
 
 import json
 import logging
@@ -15,6 +18,7 @@ from app.ingestion.image_extractor import (
     extract_images,
     save_extracted_images,
 )
+from app.ingestion.rag_service import RagService
 from app.ingestion.reference_repository import ReferenceRepository, StoredReferenceFile
 from app.ingestion.text_extractor import TextChunk, extract_text
 
@@ -36,12 +40,14 @@ class ReferenceIngestionService:
         self,
         reference_repository: ReferenceRepository,
         storage_directory: Path,
+        rag_service: RagService | None = None,
         *,
         max_file_size_bytes: int,
         min_image_dimension: int,
     ) -> None:
         self._reference_repository = reference_repository
         self._storage_directory = storage_directory
+        self._rag_service = rag_service
         self._max_file_size_bytes = max_file_size_bytes
         self._min_image_dimension = min_image_dimension
 
@@ -57,7 +63,9 @@ class ReferenceIngestionService:
         2. Store the raw file with a safe UUID filename
         3. Extract text chunks with source provenance
         4. Extract images filtered by minimum dimension
-        5. Persist all metadata to the database
+        5. Ingest text into RAG system with embeddings
+        6. Ingest images into Visual RAG with CLIP embeddings
+        7. Persist all metadata to the database
 
         Raises ``ReferenceIngestionError`` on validation or extraction failure.
         """
@@ -106,12 +114,68 @@ class ReferenceIngestionService:
             )
             extracted_text_path = str(text_file_path)
 
+        # Step 3b: Ingest text into RAG system if enabled.
+        if self._rag_service and text_chunks:
+            try:
+                text_with_pages = [
+                    (chunk.content, chunk.source_page) for chunk in text_chunks
+                ]
+                ingested_count = self._rag_service.ingest_reference_chunks(
+                    file_id=file_id,
+                    owner_user_id=owner_user_id,
+                    text_with_pages=text_with_pages,
+                )
+                LOGGER.info(
+                    "RAG text ingestion completed for file %s: %d chunks",
+                    file_id,
+                    ingested_count,
+                )
+            except Exception as e:
+                LOGGER.warning(
+                    "RAG text ingestion failed for file %s: %s",
+                    file_id,
+                    e,
+                    exc_info=True,
+                )
+                # Continue without failing the entire ingestion
+
         # Step 4: Extract images.
         extracted_images = self._safe_extract_images(validated_file)
         image_paths: dict[str, str] = {}
         if extracted_images:
             images_directory = file_storage_directory / "images"
             image_paths = save_extracted_images(extracted_images, images_directory)
+
+        # Step 4b: Ingest images into Visual RAG if enabled.
+        if self._rag_service and extracted_images:
+            try:
+                for image in extracted_images:
+                    image_path = image_paths.get(image.image_id, "")
+                    if image_path:
+                        # Generate a simple caption based on page info
+                        caption = f"Image from page {image.source_page} of {validated_file.original_filename}"
+                        
+                        success = self._rag_service.ingest_image_with_embedding(
+                            file_id=file_id,
+                            owner_user_id=owner_user_id,
+                            image_id=image.image_id,
+                            image_path=image_path,
+                            source_page=image.source_page,
+                            caption=caption,
+                        )
+                        if success:
+                            LOGGER.info(
+                                "Visual RAG ingestion completed for image %s",
+                                image.image_id,
+                            )
+            except Exception as e:
+                LOGGER.warning(
+                    "Visual RAG image ingestion failed for file %s: %s",
+                    file_id,
+                    e,
+                    exc_info=True,
+                )
+                # Continue without failing the entire ingestion
 
         # Step 5: Persist metadata.
         stored_reference = self._reference_repository.store_reference_file(
