@@ -22,21 +22,35 @@ wheels/
 *.egg
 
 # Environment
-.env
-.env.local
-.env.*
-
-# Database
-ai-service/ai_jobs.db
-
-# Logs
-*.log
+.venv/
+venv/
+env/
+ENV/
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# Logs
+*.log
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Local configuration
+.env
+.env.local
+*.env.*
+
+# Coverage
+.coverage
+htmlcov/
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
 ```

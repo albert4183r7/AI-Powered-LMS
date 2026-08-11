@@ -1,6 +1,6 @@
 # Lumen LMS
 
-Lumen is a production-ready enterprise learning management system with integrated AI course generation capabilities. Built with Next.js, React, TypeScript, Prisma, and SQLite for the core platform, with a FastAPI-based AI service for intelligent content creation.
+Lumen is a production-ready enterprise learning management system with integrated AI course generation capabilities. Built with Next.js, React, TypeScript, Prisma, and SQLite for the core platform, with a FastAPI-based AI service for intelligent content creation featuring Visual RAG, multi-modal embeddings, and automated presentation generation.
 
 ## Features
 
@@ -16,12 +16,18 @@ Lumen is a production-ready enterprise learning management system with integrate
 - Responsive English and Mandarin interface
 
 ### AI-Powered Course Generation
-- Automated module generation via EcoAPI integration
-- Reference document ingestion and processing
-- Asynchronous job processing with status polling
-- Support for job cancellation and retry mechanisms
-- Structured course outline generation with sections and lessons
-- Multi-language output support (English and Mandarin)
+- **Automated Module Generation**: Create complete course modules with sections and lessons via Qwen API integration
+- **Visual RAG (Retrieval-Augmented Generation)**: Multi-modal retrieval using both text and image embeddings for accurate context
+- **Reference Document Ingestion**: Upload PDFs, Word docs, and images with automatic text extraction and visual cataloging
+- **Persistent Data Sources**: Reuse uploaded documents across multiple module generations with version control
+- **Asynchronous Job Processing**: Background workers handle generation jobs with real-time status polling
+- **Job Management**: Support for job cancellation, retry mechanisms, and draft saving
+- **Multi-Language Output**: Generate content in English, Indonesian, or Mandarin
+- **AI Presentation Generation**: Automatically create PowerPoint (.pptx) files with AI-selected visuals from references or generated illustrations
+- **Lesson Regeneration**: Regenerate individual lessons with version comparison and rollback capabilities
+- **Add Lesson with AI**: Append new AI-generated lessons to existing modules
+- **Web Search Integration**: Real-time web search for up-to-date information during content generation
+- **Content Guardrails**: Basic content filtering and PII detection for safety
 
 ## Technology Stack
 
@@ -32,8 +38,11 @@ Lumen is a production-ready enterprise learning management system with integrate
 | Backend | Next.js Route Handlers + FastAPI |
 | Database | SQLite with Prisma ORM |
 | Validation | Zod and shared validation helpers |
-| AI Service | Python FastAPI with HTTP client |
-| Presentations | PDF.js previews plus PowerPoint/LibreOffice conversion |
+| AI Service | Python FastAPI with Qwen API integration |
+| Embeddings | Sentence Transformers (multilingual-e5-small, CLIP ViT-B-32) |
+| Vector Store | ChromaDB-ready with local embedding storage |
+| Presentations | python-pptx for PPTX generation, PDF.js previews |
+| Web Search | DuckDuckGo Search API |
 
 ## Quick Start
 
@@ -90,8 +99,9 @@ AI_SERVICE_INTERNAL_API_KEY="your-internal-api-key"
 ```dotenv
 AI_SERVICE_ENVIRONMENT="development"
 AI_SERVICE_INTERNAL_API_KEY="your-internal-api-key"
-ECOAPI_KEY="your-ecoapi-key"
-ECOAPI_BASE_URL="https://api.ecoapi.com"
+QWEN_API_KEY="your-qwen-api-key"
+QWEN_BASE_URL="https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+QWEN_MODEL="qwen-plus"
 ```
 
 > **Security Note:** Use long, random values for secrets in production. The `AI_SERVICE_INTERNAL_API_KEY` must match in both services.
@@ -133,8 +143,9 @@ lumen-lms/
 │   │   ├── main.py         # FastAPI application entry point
 │   │   ├── api/            # API route handlers
 │   │   ├── core/           # Core business logic
+│   │   ├── ingestion/      # Reference ingestion & RAG
 │   │   ├── models/         # Pydantic models
-│   │   └── services/       # External service integrations
+│   │   └── services/       # AI services (Qwen, RAG, PPTX, etc.)
 │   └── requirements.txt    # Python dependencies
 ├── prisma/
 │   ├── schema.prisma       # Database schema
@@ -174,18 +185,15 @@ lumen-lms/
 | POST | `/api/ai/generations/modules` | Create module generation job |
 | GET | `/api/ai/generations/:jobId` | Get generation job status |
 | POST | `/api/ai/generations/:jobId/cancel` | Cancel generation job |
+| POST | `/api/ai/generations/:jobId/save` | Save generated module as draft |
 
-### Courses
+### Data Sources (Document Repository)
 | Method | Endpoint | Description |
 | --- | --- | --- |
-| GET | `/api/courses` | List published courses |
-| POST | `/api/courses/create` | Create draft course |
-| GET/PATCH/DELETE | `/api/courses/:id` | Manage course |
-| POST | `/api/courses/:id/add-manual-section` | Add lesson section |
-| POST/DELETE | `/api/courses/:id/enroll` | Enroll/unenroll |
-| POST/DELETE | `/api/courses/:id/bookmark` | Manage bookmarks |
-| GET | `/api/courses/:id/progress` | View course progress |
-| GET | `/api/my-courses` | List instructor's courses |
+| POST | `/api/ai/data-sources` | Create new data source entry |
+| POST | `/api/ai/data-sources/:id/versions` | Upload new version of document |
+| GET | `/api/ai/data-sources` | List user's data sources |
+| GET | `/api/ai/data-sources/:id` | Get data source details |
 
 ### Lessons
 | Method | Endpoint | Description |
@@ -193,12 +201,15 @@ lumen-lms/
 | PATCH/DELETE | `/api/lessons/:id` | Update/delete lesson |
 | POST | `/api/lessons/:id/reorder` | Reorder lesson |
 | POST | `/api/lessons/:id/complete` | Mark lesson complete |
+| POST | `/api/ai/lessons/:id/add` | Add new lesson with AI |
+| POST | `/api/ai/lessons/:id/regenerate` | Regenerate lesson with AI |
 
 ### Presentations & Uploads
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | GET | `/api/presentations/:id/preview` | Get PDF preview |
 | POST | `/api/upload` | Upload presentation file |
+| GET | `/api/ai/presentations/:jobId/download` | Download generated PPTX |
 
 ### Admin
 | Method | Endpoint | Description |
@@ -209,16 +220,26 @@ lumen-lms/
 
 The AI service operates as an independent FastAPI application that communicates with the main LMS via secure internal API calls:
 
-1. **Job Submission**: LMS submits generation requests to AI service
-2. **Async Processing**: Background workers process generation jobs
-3. **Status Polling**: LMS polls job status for real-time updates
-4. **Result Delivery**: Generated content is returned to LMS for storage
+1. **Document Upload & Ingestion**: Users upload reference documents which are processed for text and images
+2. **Visual RAG Processing**: Text chunks and images are embedded locally and stored for semantic retrieval
+3. **Job Submission**: LMS submits generation requests with selected data sources
+4. **Context Retrieval**: RAG service retrieves relevant text passages and images from uploaded documents
+5. **Web Search (Optional)**: Real-time web search augments retrieved context with current information
+6. **AI Generation**: Qwen API generates structured content using retrieved context + web results
+7. **Presentation Creation**: Generated content is converted to PPTX with AI-selected visuals
+8. **Async Processing**: Background workers process jobs with real-time status updates
+9. **Result Delivery**: Generated content and presentations are returned to LMS for storage and download
 
 ### Key Components
-- **Module Generator**: Creates structured course outlines
-- **EcoAPI Client**: Integrates with external AI provider
-- **Background Worker**: Handles async job processing
-- **Reference Ingestion**: Processes uploaded reference documents
+- **Qwen Provider**: Integration with Qwen API (`qwen-plus` model) for text generation
+- **Embedding Service**: Local embeddings using `multilingual-e5-small` (text) and `CLIP ViT-B-32` (images)
+- **RAG Service**: Hybrid text + image retrieval with citation tracking
+- **Visual Catalog**: Metadata extraction for images (page, dimensions, captions)
+- **Data Source Service**: Persistent document repository with versioning
+- **Presentation Generator**: Automated PPTX creation with python-pptx
+- **Background Worker**: Async job processing with progress tracking
+- **Web Search Service**: DuckDuckGo integration for real-time information
+- **Guardrails**: Content filtering and PII detection
 
 ## Documentation
 
@@ -241,7 +262,9 @@ DATABASE_URL="file:/path/to/production.db"
 # AI Service
 AI_SERVICE_ENVIRONMENT="production"
 AI_SERVICE_INTERNAL_API_KEY="<secure-random-string>"
-ECOAPI_KEY="<your-ecoapi-production-key>"
+QWEN_API_KEY="<your-qwen-production-key>"
+QWEN_BASE_URL="https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+QWEN_MODEL="qwen-plus"
 ```
 
 ### Security Considerations
@@ -250,6 +273,8 @@ ECOAPI_KEY="<your-ecoapi-production-key>"
 - Implement rate limiting
 - Enable CORS only for trusted domains
 - Store secrets in environment variables or secret management systems
+- Content guardrails for PII and harmful content detection
+- Correlation ID logging for observability and debugging
 
 ## License
 
