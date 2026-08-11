@@ -34,24 +34,14 @@ def _build_module_generator(
     on shutdown when the real generator is active.
     """
 
-    if (
-        ai_service_settings.use_real_module_generator
-        and ai_service_settings.qwen_api_key is not None
-    ):
+    if ai_service_settings.use_real_module_generator:
+        # Use local Qwen model via Ollama (no API key needed)
         qwen_client = QwenClient(
-            base_url=ai_service_settings.qwen_base_url,
-            api_key=ai_service_settings.qwen_api_key.get_secret_value(),
-            model=ai_service_settings.qwen_chat_model,
+            model=ai_service_settings.qwen_model,
             timeout_seconds=ai_service_settings.qwen_request_timeout_seconds,
         )
-        LOGGER.info("Module generator: QwenModuleGenerator (real provider).")
+        LOGGER.info("Module generator: QwenModuleGenerator (local Ollama provider).")
         return QwenModuleGenerator(qwen_client=qwen_client), qwen_client
-
-    if ai_service_settings.use_real_module_generator:
-        LOGGER.warning(
-            "use_real_module_generator is enabled but qwen_api_key is not set. "
-            "Falling back to FakeModuleGenerator.",
-        )
 
     LOGGER.info("Module generator: FakeModuleGenerator (no provider calls).")
     return FakeModuleGenerator(

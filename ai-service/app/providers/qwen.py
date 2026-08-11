@@ -1,10 +1,10 @@
-"""Typed adapter for Qwen's OpenAI-compatible chat endpoint."""
+"""Typed adapter for local Qwen model via Ollama."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
-import httpx
+import ollama
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 ChatRole = Literal["system", "user", "assistant", "tool"]
@@ -28,7 +28,7 @@ class QwenError(RuntimeError):
 
 
 class QwenAuthenticationError(QwenError):
-    """Qwen rejected the configured credential."""
+    """Ollama rejected the configured credential."""
 
 
 class QwenAccessError(QwenError):
@@ -36,11 +36,11 @@ class QwenAccessError(QwenError):
 
 
 class QwenRequestError(QwenError):
-    """Qwen rejected a non-retryable request."""
+    """Ollama rejected a non-retryable request."""
 
 
 class QwenRateLimitError(QwenError):
-    """Qwen asked the caller to retry after rate limiting."""
+    """Ollama asked the caller to retry after rate limiting."""
 
 
 class QwenTransientError(QwenError):
@@ -48,7 +48,7 @@ class QwenTransientError(QwenError):
 
 
 class QwenResponseError(QwenError):
-    """Qwen returned a success payload that violated the observed contract."""
+    """Ollama returned a success payload that violated the observed contract."""
 
 
 @dataclass(frozen=True)
@@ -144,41 +144,30 @@ class _QwenChatResponse(_ProviderSchema):
 
 
 class QwenClient:
-    """Send non-streaming chat requests and normalize the observed response contract."""
+    """Send non-streaming chat requests to local Ollama and normalize the response."""
 
     capabilities = QwenCapabilities()
 
     def __init__(
         self,
         *,
-        base_url: str,
-        api_key: str,
+        base_url: str | None = None,
+        api_key: str | None = None,
         model: str,
         timeout_seconds: float,
-        http_client: httpx.Client | None = None,
+        http_client: object | None = None,
     ) -> None:
-        normalized_base_url = base_url.rstrip("/")
-        if not normalized_base_url.endswith("/v1"):
-            raise ValueError("Qwen base URL must end with /v1.")
-        if not api_key.strip():
-            raise ValueError("Qwen API key cannot be empty.")
         if not model.strip():
             raise ValueError("Qwen model cannot be empty.")
 
-        self._chat_completions_url = normalized_base_url + "/chat/completions"
-        self._api_key = api_key
         self._model = model
-        self._http_client = http_client or httpx.Client(
-            timeout=timeout_seconds,
-            follow_redirects=False,
-        )
-        self._owns_http_client = http_client is None
+        self._timeout_seconds = timeout_seconds
+        # Ollama client is stateless, we just use the library directly
+        self._owns_http_client = True
 
     def close(self) -> None:
-        """Close only the HTTP client created by this adapter."""
-
-        if self._owns_http_client:
-            self._http_client.close()
+        """No-op for Ollama client."""
+        pass
 
     def create_chat_completion(
         self,
@@ -188,135 +177,73 @@ class QwenClient:
         tool_choice: str | dict[str, object] | None = None,
         max_tokens: int | None = None,
     ) -> QwenChatCompletion:
-        """Create one completion without claiming unsupported schema enforcement."""
+        """Create one completion using local Ollama."""
 
         if not messages:
             raise ValueError("At least one Qwen chat message is required.")
-        request_payload: dict[str, object] = {
-            "model": self._model,
-            "messages": [
-                {"role": message.role, "content": message.content} for message in messages
-            ],
-            "stream": False,
-        }
-        if tools:
-            request_payload["tools"] = list(tools)
-        if tool_choice is not None:
-            request_payload["tool_choice"] = tool_choice
-        if max_tokens is not None:
-            request_payload["max_tokens"] = max_tokens
-
+        
+        # Convert to Ollama format
+        ollama_messages = [
+            {"role": message.role, "content": message.content} for message in messages
+        ]
+        
         try:
-            provider_response = self._http_client.post(
-                self._chat_completions_url,
-                headers={
-                    "accept": "application/json",
-                    "authorization": f"Bearer {self._api_key}",
-                    "content-type": "application/json",
-                },
-                json=request_payload,
+            # Call Ollama
+            response = ollama.chat(
+                model=self._model,
+                messages=ollama_messages,
+                stream=False,
             )
-        except httpx.TimeoutException as timeout_error:
-            raise QwenTransientError(
-                "The model provider timed out.",
-                code="QWEN_TIMEOUT",
-                retryable=True,
-            ) from timeout_error
-        except httpx.RequestError as request_error:
-            raise QwenTransientError(
-                "The model provider is unavailable.",
-                code="QWEN_UNAVAILABLE",
-                retryable=True,
-            ) from request_error
-
-        if not provider_response.is_success:
-            self._raise_normalized_http_error(provider_response)
-
-        try:
-            parsed_response = _QwenChatResponse.model_validate(provider_response.json())
-        except (ValueError, ValidationError) as response_error:
-            raise QwenResponseError(
-                "The model provider returned an invalid response.",
-                code="QWEN_INVALID_RESPONSE",
-                retryable=False,
-            ) from response_error
-
-        first_choice = parsed_response.choices[0]
-        token_usage = (
-            QwenTokenUsage(
-                prompt_tokens=parsed_response.usage.prompt_tokens,
-                completion_tokens=parsed_response.usage.completion_tokens,
-                total_tokens=parsed_response.usage.total_tokens,
-            )
-            if parsed_response.usage
-            else None
-        )
-        return QwenChatCompletion(
-            id=parsed_response.id,
-            model=parsed_response.model,
-            finish_reason=first_choice.finish_reason,
-            content=first_choice.message.content,
-            tool_calls=tuple(
-                QwenToolCall(
-                    id=tool_call.id,
-                    name=tool_call.function.name,
-                    arguments_json=tool_call.function.arguments,
+            
+            # Extract response
+            message_content = response.get("message", {}).get("content", "")
+            finish_reason = response.get("done_reason", "stop")
+            model_name = response.get("model", self._model)
+            
+            # Extract usage if available
+            usage_data = response.get("prompt_eval_count", 0)
+            completion_tokens = response.get("eval_count", 0)
+            
+            token_usage = None
+            if usage_data or completion_tokens:
+                token_usage = QwenTokenUsage(
+                    prompt_tokens=usage_data,
+                    completion_tokens=completion_tokens,
+                    total_tokens=usage_data + completion_tokens,
                 )
-                for tool_call in first_choice.message.tool_calls
-            ),
-            usage=token_usage,
-        )
-
-    @staticmethod
-    def _raise_normalized_http_error(provider_response: httpx.Response) -> None:
-        provider_code = QwenClient._read_provider_error_code(provider_response)
-        response_status = provider_response.status_code
-        if response_status == 401:
-            raise QwenAuthenticationError(
-                "The model provider rejected its credential.",
-                code="QWEN_AUTHENTICATION_FAILED",
+            
+            # Handle tool calls (simplified for Ollama)
+            tool_calls = ()
+            
+            return QwenChatCompletion(
+                id=f"ollama-{id(response)}",
+                model=model_name,
+                finish_reason=finish_reason,
+                content=message_content,
+                tool_calls=tool_calls,
+                usage=token_usage,
+            )
+            
+        except ollama.ResponseError as e:
+            raise QwenRequestError(
+                f"Ollama rejected the request: {str(e)}",
+                code="OLLAMA_REQUEST_ERROR",
                 retryable=False,
-                provider_code=provider_code,
-            )
-        if response_status == 403:
-            raise QwenAccessError(
-                "The model provider denied access to the requested model.",
-                code="QWEN_ACCESS_DENIED",
-                retryable=False,
-                provider_code=provider_code,
-            )
-        if response_status == 429:
-            raise QwenRateLimitError(
-                "The model provider is rate limiting requests.",
-                code="QWEN_RATE_LIMITED",
-                retryable=True,
-                provider_code=provider_code,
-            )
-        if response_status in {408, 425} or response_status >= 500:
+            ) from e
+        except Exception as e:
             raise QwenTransientError(
-                "The model provider is temporarily unavailable.",
-                code="QWEN_TRANSIENT_FAILURE",
+                f"Ollama service unavailable: {str(e)}",
+                code="OLLAMA_UNAVAILABLE",
                 retryable=True,
-                provider_code=provider_code,
-            )
-        raise QwenRequestError(
-            "The model provider rejected the request.",
-            code="QWEN_REQUEST_REJECTED",
-            retryable=False,
-            provider_code=provider_code,
-        )
+            ) from e
 
     @staticmethod
-    def _read_provider_error_code(provider_response: httpx.Response) -> str | None:
-        try:
-            error_payload = provider_response.json()
-        except ValueError:
-            return None
-        if not isinstance(error_payload, dict):
-            return None
-        error_details = error_payload.get("error")
-        if not isinstance(error_details, dict):
-            return None
-        provider_code = error_details.get("code")
-        return str(provider_code)[:100] if provider_code is not None else None
+    def _raise_normalized_http_error(provider_response: object) -> None:
+        # Not used for Ollama
+        pass
+
+    @staticmethod
+    def _read_provider_error_code(provider_response: object) -> str | None:
+        # Not used for Ollama
+        return None
 

@@ -21,11 +21,9 @@ class AiServiceSettings(BaseSettings):
     fake_generation_delay_seconds: float = Field(default=0.15, ge=0, le=5)
     use_real_module_generator: bool = False
     
-    # Qwen API Configuration (replaces EcoAPI)
-    qwen_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    qwen_api_key: SecretStr | None = None
-    qwen_chat_model: str = "qwen-plus"
-    qwen_request_timeout_seconds: float = Field(default=60, gt=0, le=300)
+    # Qwen Model Configuration (Local via Ollama - NO API KEY NEEDED)
+    qwen_model: str = "qwen3.6:27b"
+    qwen_request_timeout_seconds: float = Field(default=120, gt=0, le=600)
     
     internal_api_key: SecretStr = SecretStr(
         "local-development-internal-key-change-before-production",

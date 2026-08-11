@@ -1,4 +1,4 @@
-"""Module generator that calls Qwen API and validates structured JSON output."""
+"""Module generator that calls local Qwen model via Ollama and validates structured JSON output."""
 
 import json
 import logging
@@ -24,7 +24,7 @@ class ModulePlanningError(RuntimeError):
 
 
 class QwenModuleGenerator:
-    """Generate validated module plans using Qwen chat completions.
+    """Generate validated module plans using local Qwen model via Ollama.
 
     Since the tested model does not enforce ``response_format``, this generator
     requests JSON via the prompt, extracts it from potential markdown fences,
@@ -156,7 +156,7 @@ class QwenModuleGenerator:
         completion_tokens = getattr(usage, "completion_tokens", None)
         total_tokens = getattr(usage, "total_tokens", None)
         LOGGER.info(
-            "Qwen token usage: prompt=%s completion=%s total=%s",
+            "Ollama token usage: prompt=%s completion=%s total=%s",
             prompt_tokens,
             completion_tokens,
             total_tokens,
