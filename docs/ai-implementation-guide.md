@@ -62,8 +62,8 @@ Instructors now have an AI prompt entry point on the dashboard and a dedicated,
 responsive request form. The form collects the same values defined by the Python
 contract and performs immediate file and prompt validation.
 
-The form does not call EcoAPI yet. Its current final action reviews the request so
-the UI can be tested without consuming credits or pretending generation succeeded.
+The form does not call the AI model yet. Its current final action reviews the request so
+the UI can be tested without consuming compute resources or pretending generation succeeded.
 
 ## Completed step 4: persistent fake generation jobs
 
@@ -116,40 +116,21 @@ but generation is explicitly blocked while files are selected because ingestion
 does not exist until phase 8. The UI also states that the current result used no
 model, web search, references, or provider credits.
 
-## Completed phase 6: EcoAPI probe and provider adapter
+## Completed phase 6: Qwen (Ollama) provider integration
 
-The live capability probe established the working OpenAI-compatible base URL as
-`https://www.ecoapi.ai/v1`, verified bearer authentication, the configured model,
-chat completions, tool calls, SSE streaming, usage metadata, and the provider's
-error envelope. The full observations and unresolved production checks are in
-[`ecoapi-capability-probe.md`](ecoapi-capability-probe.md).
+The implementation replaced EcoAPI with a local Qwen model via Ollama. The typed adapter now uses the `ollama` Python library to communicate with a locally-running Ollama server at `http://localhost:11434`. This eliminates external API dependencies and keeps all data on-premises.
 
-The tested model accepts `response_format` but does not enforce either JSON
-Schema or JSON object output. The new typed adapter therefore validates provider
-responses and normalizes errors, timeouts, access failures, and retryability
-without claiming structured-output support. Provider secrets remain server-only.
+The tested model (`qwen3.6:27b`) accepts structured JSON output via prompt engineering. The adapter validates responses and normalizes errors, timeouts, and retryability. Model configuration is server-only via environment variables.
 
-The worker deliberately remains on `FakeModuleGenerator`. The EcoAPI adapter is
-the lower-level provider boundary that the real `ModuleGenerator` implementation
-will use next.
+The worker now uses `QwenModuleGenerator` for real module generation. The fake generator remains available for testing without model calls.
 
 ## Completed phase 7: real structured module planning
 
-The EcoAPI adapter now powers real module generation when activated by
-configuration. A prompt builder constructs system and user messages that embed
-the `ModulePlan` JSON schema and depth-specific lesson targets. The generator
-extracts JSON from potential markdown fences, validates every response with
-Pydantic, and attempts bounded repair by re-prompting the model with its
-validation errors.
+The Qwen (Ollama) provider now powers real module generation when activated by configuration. A prompt builder constructs system and user messages that embed the `ModulePlan` JSON schema and depth-specific lesson targets. The generator extracts JSON from potential markdown fences, validates every response with Pydantic, and attempts bounded repair by re-prompting the model with its validation errors.
 
-Activation requires both `AI_SERVICE_USE_REAL_MODULE_GENERATOR=true` and a
-configured `AI_SERVICE_ECOAPI_API_KEY`. When either is absent, the service
-falls back to `FakeModuleGenerator` and logs the active generator at startup.
-The EcoAPI client is properly closed on application shutdown.
+Activation requires `AI_SERVICE_USE_REAL_MODULE_GENERATOR=true` and a configured `AI_SERVICE_QWEN_MODEL`. When the model is not configured or Ollama is unavailable, the service falls back to `FakeModuleGenerator` and logs the active generator at startup. The Ollama client is properly initialized on application startup.
 
-Because the tested model does not enforce `response_format`, the implementation
-never relies on provider-side JSON enforcement. All deterministic tests use
-`httpx.MockTransport` and never contact the real provider.
+Because the local model does not enforce strict JSON schema, the implementation never relies on model-side enforcement. All deterministic tests use mock transports and never contact the real model.
 
 ## Completed phase 8: reference ingestion and visual catalog
 

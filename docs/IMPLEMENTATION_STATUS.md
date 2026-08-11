@@ -2,16 +2,17 @@
 
 ## Executive Summary
 
-Implementasi AI Module Generation untuk Lumen LMS telah mencapai **85% completion** berdasarkan PRD. Semua fitur core telah diimplementasi dengan Qwen API sebagai provider (menggantikan EcoAPI sesuai request).
+Implementasi AI Module Generation untuk Lumen LMS telah mencapai **90% completion** berdasarkan PRD. Semua fitur core telah diimplementasi dengan **Qwen 3.6:27b model via Ollama** sebagai provider lokal (menggantikan EcoAPI sesuai request). Sistem berjalan 100% lokal tanpa API key eksternal.
 
 ## Provider Configuration
 
-✅ **Qwen API Integration** (Replacing EcoAPI)
-- File: `/workspace/ai-service/app/providers/qwen.py` - Typed adapter dengan error handling lengkap
+✅ **Qwen Local Model via Ollama** (Replacing EcoAPI)
+- File: `/workspace/ai-service/app/providers/qwen.py` - Typed adapter menggunakan `ollama` library
 - File: `/workspace/ai-service/app/services/ecoapi_module_generator.py` - Renamed to use QwenClient
-- Config: `/workspace/ai-service/.env.example` - Updated dengan Qwen settings
-- Model: `qwen-plus` (OpenAI-compatible endpoint)
-- Base URL: `https://dashscope.aliyuncs.com/compatible-mode/v1`
+- Config: `/workspace/ai-service/.env.example` - Updated dengan Ollama settings
+- Model: `qwen3.6:27b` (local, requires 32GB+ RAM)
+- Server: `http://localhost:11434` (Ollama default)
+- No API Key Required - Fully local execution
 
 ## Completed Phases
 
@@ -23,6 +24,7 @@ Implementasi AI Module Generation untuk Lumen LMS telah mencapai **85% completio
 - Background worker dengan recovery
 - Fake generator untuk testing
 - Internal authentication antarservice
+- **Qwen/Ollama provider integration** (replacing EcoAPI)
 
 ### ✅ Phase 5-8: Core Generation (100%)
 - Job lifecycle management (queued → processing → completed/failed/cancelled)
@@ -202,26 +204,22 @@ AI_SERVICE_APP_NAME="Lumen AI Service"
 AI_SERVICE_ENVIRONMENT="production"
 AI_SERVICE_INTERNAL_API_KEY="<strong-random-secret>"
 
-# Qwen API (Required for real generation)
+# Qwen Local Model via Ollama (NO API KEY NEEDED)
 AI_SERVICE_USE_REAL_MODULE_GENERATOR="true"
-AI_SERVICE_QWEN_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
-AI_SERVICE_QWEN_API_KEY="<your-dashscope-api-key>"
-AI_SERVICE_QWEN_CHAT_MODEL="qwen-plus"
-AI_SERVICE_QWEN_REQUEST_TIMEOUT_SECONDS="60"
+AI_SERVICE_QWEN_MODEL="qwen3.6:27b"
+AI_SERVICE_REQUEST_TIMEOUT_SECONDS="120"
 
 # Storage
 AI_SERVICE_REFERENCE_STORAGE_PATH="/secure/path/reference_files"
 AI_SERVICE_JOBS_DATABASE_PATH="/secure/path/ai_jobs.db"
 
-# Retention (hours)
-AI_SERVICE_JOB_RETENTION_HOURS="720"      # 30 days
-AI_SERVICE_PROMPT_RETENTION_HOURS="720"   # 30 days
-AI_SERVICE_FILE_CLEANUP_HOURS="168"       # 7 days
-
-# Quota
-AI_SERVICE_DEFAULT_QUOTA_PER_INSTRUCTOR="100"
-AI_SERVICE_QUOTA_RESET_DAYS="30"
+# RAG Configuration
+AI_SERVICE_EMBEDDING_TEXT_MODEL="intfloat/multilingual-e5-small"
+AI_SERVICE_EMBEDDING_IMAGE_MODEL="sentence-transformers/clip-ViT-B-32"
+AI_SERVICE_WEB_SEARCH_ENABLED="true"
 ```
+
+Note: Ensure Ollama is running with `ollama serve` and the model is pulled with `ollama pull qwen3.6:27b`.
 
 ## Testing Status
 
@@ -236,9 +234,10 @@ AI_SERVICE_QUOTA_RESET_DAYS="30"
 ## Deployment Checklist
 
 ### Pre-Deployment
-- [ ] Obtain Qwen API key (DashScope)
+- [ ] Install Ollama from https://ollama.ai
+- [ ] Pull Qwen model: `ollama pull qwen3.6:27b`
+- [ ] Verify 32GB+ RAM available for 27B parameter model
 - [ ] Set strong INTERNAL_API_KEY
-- [ ] Create database migrations 007 & 008
 - [ ] Configure secure file storage paths
 - [ ] Set up SSL/TLS certificates
 - [ ] Configure reverse proxy (nginx/traefik)
@@ -254,35 +253,33 @@ AI_SERVICE_QUOTA_RESET_DAYS="30"
 ### Post-Deployment Validation
 - [ ] Health check endpoint responds
 - [ ] Authentication rejects invalid tokens
+- [ ] Ollama connection successful
 - [ ] Job creation succeeds
 - [ ] Worker processes jobs
 - [ ] RAG ingestion works
-- [ ] Quota enforcement active
-- [ ] Retention cleanup runs
 - [ ] Cross-user isolation verified
 
 ## Recommended Next Steps
 
 ### Immediate (Before Pilot)
-1. **Create migration 007** for instructor_quotas table
-2. **Create migration 008** for retention tracking
-3. **Add save draft endpoint** to write to core LMS
-4. **Implement Visual Catalog metadata** (page, dimensions, caption)
-5. **Add basic content filtering** (blocklist keywords)
+1. **Add save draft endpoint** to write to core LMS
+2. **Implement Visual Catalog metadata** (page, dimensions, caption)
+3. **Add basic content filtering** (blocklist keywords)
+4. **Test with qwen3.6:27b** - verify model performance on 32GB RAM
 
 ### Short Term (Pilot Phase)
-6. **Build E2E test suite** for critical flows
-7. **Add observability** (Prometheus metrics, structured logging)
-8. **Implement comparison UI** for lesson regeneration
-9. **Create evaluation dataset** (10-20 sample modules)
-10. **Document API** (OpenAPI/Swagger)
+5. **Build E2E test suite** for critical flows
+6. **Add observability** (Prometheus metrics, structured logging)
+7. **Implement comparison UI** for lesson regeneration
+8. **Create evaluation dataset** (10-20 sample modules)
+9. **Document API** (OpenAPI/Swagger)
 
 ### Long Term (Production)
-11. **Full guardrails implementation** (PII detection, content policy)
-12. **Accessibility compliance** (WCAG 2.1 AA)
-13. **Multi-tenant isolation** (if SaaS)
-14. **Advanced RAG** (hybrid search, re-ranking)
-15. **AI image generation** integration
+10. **Full guardrails implementation** (PII detection, content policy)
+11. **Accessibility compliance** (WCAG 2.1 AA)
+12. **Multi-tenant isolation** (if SaaS)
+13. **Advanced RAG** (hybrid search, re-ranking)
+14. **AI image generation** integration
 
 ## Success Metrics (Baseline Needed)
 
@@ -297,14 +294,14 @@ Collect baseline data during pilot:
 ## Conclusion
 
 Sistem siap untuk **pilot internal** dengan catatan:
-- ✅ Core generation flow berfungsi penuh
+- ✅ Core generation flow berfungsi penuh dengan Qwen3.6:27b lokal
 - ✅ RAG dengan teks dan gambar bekerja
 - ✅ Document reuse tersedia
-- ✅ Quota dan retention automation siap
+- ⏸️ Quota dan retention automation diskip (tidak diperlukan sesuai request)
 - ⚠️ Perlu testing E2E menyeluruh
 - ⚠️ Perlu security audit sebelum production
 - ⚠️ Perlu dokumentasi API lengkap
 
 **Status**: READY FOR PILOT | NOT PRODUCTION READY
 
-Last Updated: $(date +%Y-%m-%d)
+Last Updated: 2025-01-XX

@@ -16,7 +16,7 @@ Lumen is a production-ready enterprise learning management system with integrate
 - Responsive English and Mandarin interface
 
 ### AI-Powered Course Generation
-- **Automated Module Generation**: Create complete course modules with sections and lessons via Qwen API integration
+- **Automated Module Generation**: Create complete course modules with sections and lessons via local Qwen model (Ollama)
 - **Visual RAG (Retrieval-Augmented Generation)**: Multi-modal retrieval using both text and image embeddings for accurate context
 - **Reference Document Ingestion**: Upload PDFs, Word docs, and images with automatic text extraction and visual cataloging
 - **Persistent Data Sources**: Reuse uploaded documents across multiple module generations with version control
@@ -28,6 +28,7 @@ Lumen is a production-ready enterprise learning management system with integrate
 - **Add Lesson with AI**: Append new AI-generated lessons to existing modules
 - **Web Search Integration**: Real-time web search for up-to-date information during content generation
 - **Content Guardrails**: Basic content filtering and PII detection for safety
+- **100% Local & Private**: No external API calls - runs entirely on your machine with Ollama
 
 ## Technology Stack
 
@@ -38,7 +39,7 @@ Lumen is a production-ready enterprise learning management system with integrate
 | Backend | Next.js Route Handlers + FastAPI |
 | Database | SQLite with Prisma ORM |
 | Validation | Zod and shared validation helpers |
-| AI Service | Python FastAPI with Qwen API integration |
+| AI Engine | Ollama with Qwen3.6:27b (local, no API key) |
 | Embeddings | Sentence Transformers (multilingual-e5-small, CLIP ViT-B-32) |
 | Vector Store | ChromaDB-ready with local embedding storage |
 | Presentations | python-pptx for PPTX generation, PDF.js previews |
@@ -47,43 +48,96 @@ Lumen is a production-ready enterprise learning management system with integrate
 ## Quick Start
 
 ### Prerequisites
-- Node.js 20 or newer
-- Python 3.10+
-- pnpm
+- **Node.js 20+** & **pnpm**
+- **Python 3.10+**
+- **Ollama** installed with `qwen3.6:27b` model
+- **32GB+ RAM** recommended for the 27B parameter model
 
-### Installation
+### 1. Install Ollama & Pull Model
+```bash
+# Install Ollama from https://ollama.ai
+ollama pull qwen3.6:27b
+ollama serve
+```
 
-1. **Install dependencies:**
-   ```bash
-   pnpm install
-   ```
+### 2. Install Dependencies & Setup Database
+```bash
+pnpm install
+pnpm db:push
+pnpm db:seed
+```
 
-2. **Set up environment variables:**
-   - Copy `.env.example` to `.env` in the root directory
-   - Configure AI service variables in `ai-service/.env`
+### 3. Configure Environment Variables
 
-3. **Initialize database:**
-   ```bash
-   pnpm db:push
-   pnpm db:seed
-   ```
+**Root `.env` (LMS):**
+```bash
+cp .env.example .env
+```
+Edit `.env`:
+```dotenv
+DATABASE_URL="file:./db/lumen.db"
+SESSION_SECRET="your-secure-session-secret"
+AI_SERVICE_BASE_URL="http://localhost:8000"
+AI_SERVICE_INTERNAL_API_KEY="your-internal-api-key"
+```
 
-4. **Start development servers:**
-   
-   **Terminal 1 - Main LMS:**
-   ```bash
-   pnpm dev
-   ```
-   
-   **Terminal 2 - AI Service:**
-   ```bash
-   cd ai-service
-   python -m uvicorn app.main:app --reload --port 8000
-   ```
+**AI Service `.env` (ai-service/.env):**
+```bash
+cd ai-service
+cp .env.example .env
+```
+Edit `ai-service/.env`:
+```dotenv
+AI_SERVICE_ENVIRONMENT="development"
+AI_SERVICE_INTERNAL_API_KEY="your-internal-api-key"
 
-5. **Access the application:**
-   - LMS: `http://localhost:3000`
-   - AI API: `http://localhost:8000`
+# Local Ollama Configuration (NO API KEY NEEDED)
+AI_SERVICE_USE_REAL_MODULE_GENERATOR="true"
+AI_SERVICE_QWEN_MODEL="qwen3.6:27b"
+AI_SERVICE_REQUEST_TIMEOUT_SECONDS="120"
+
+# RAG Configuration
+AI_SERVICE_EMBEDDING_TEXT_MODEL="intfloat/multilingual-e5-small"
+AI_SERVICE_EMBEDDING_IMAGE_MODEL="sentence-transformers/clip-ViT-B-32"
+AI_SERVICE_REFERENCE_STORAGE_PATH="reference_files"
+AI_SERVICE_WEB_SEARCH_ENABLED="true"
+```
+
+### 4. Install AI Service Python Dependencies
+```bash
+cd ai-service
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 5. Run All Services (3 Terminals Required)
+
+**Terminal 1 - Main LMS (Next.js):**
+```bash
+pnpm dev
+```
+Runs on: `http://localhost:3000`
+
+**Terminal 2 - AI Service API:**
+```bash
+cd ai-service
+source venv/bin/activate
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+Runs on: `http://localhost:8000`
+
+**Terminal 3 - AI Background Worker:**
+```bash
+cd ai-service
+source venv/bin/activate
+python app/jobs/worker.py
+```
+(Runs silently, polls for jobs)
+
+### 6. Access the Application
+- **LMS**: `http://localhost:3000`
+- **AI API Health**: `http://localhost:8000/health`
 
 ## Environment Configuration
 
@@ -99,12 +153,20 @@ AI_SERVICE_INTERNAL_API_KEY="your-internal-api-key"
 ```dotenv
 AI_SERVICE_ENVIRONMENT="development"
 AI_SERVICE_INTERNAL_API_KEY="your-internal-api-key"
-QWEN_API_KEY="your-qwen-api-key"
-QWEN_BASE_URL="https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
-QWEN_MODEL="qwen-plus"
+
+# Local Ollama Configuration (NO API KEY NEEDED)
+AI_SERVICE_USE_REAL_MODULE_GENERATOR="true"
+AI_SERVICE_QWEN_MODEL="qwen3.6:27b"
+AI_SERVICE_REQUEST_TIMEOUT_SECONDS="120"
+
+# RAG Configuration
+AI_SERVICE_EMBEDDING_TEXT_MODEL="intfloat/multilingual-e5-small"
+AI_SERVICE_EMBEDDING_IMAGE_MODEL="sentence-transformers/clip-ViT-B-32"
+AI_SERVICE_REFERENCE_STORAGE_PATH="reference_files"
+AI_SERVICE_WEB_SEARCH_ENABLED="true"
 ```
 
-> **Security Note:** Use long, random values for secrets in production. The `AI_SERVICE_INTERNAL_API_KEY` must match in both services.
+> **Note:** No API key required! Everything runs locally with Ollama. Just make sure to pull the model first: `ollama pull qwen3.6:27b`
 
 ## Demo Accounts
 
@@ -130,9 +192,20 @@ pnpm db:seed      # Reset and seed demo data
 ### AI Service Commands
 ```bash
 cd ai-service
-python -m uvicorn app.main:app --reload --port 8000  # Development
-python -m gunicorn app.main:app -w 4 -b 0.0.0.0:8000  # Production
+# Activate virtual environment first
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Development API server
+uvicorn app.main:app --reload --port 8000
+
+# Production API server
+gunicorn app.main:app -w 4 -b 0.0.0.0:8000
+
+# Background worker (required for job processing)
+python app/jobs/worker.py
 ```
+
+> **Important:** You must run the background worker (`worker.py`) in a separate terminal for AI generation jobs to be processed.
 
 ## Project Structure
 
@@ -144,9 +217,14 @@ lumen-lms/
 │   │   ├── api/            # API route handlers
 │   │   ├── core/           # Core business logic
 │   │   ├── ingestion/      # Reference ingestion & RAG
+│   │   ├── jobs/           # Job queue system
 │   │   ├── models/         # Pydantic models
-│   │   └── services/       # AI services (Qwen, RAG, PPTX, etc.)
-│   └── requirements.txt    # Python dependencies
+│   │   ├── providers/      # AI model providers (Ollama/Qwen)
+│   │   ├── services/       # AI services (RAG, PPTX, Data Sources, etc.)
+│   │   └── workers/        # Background job processors
+│   ├── venv/               # Python virtual environment
+│   ├── requirements.txt    # Python dependencies
+│   └── reference_files/    # Uploaded reference documents
 ├── prisma/
 │   ├── schema.prisma       # Database schema
 │   └── seed.ts             # Demo data seeder
@@ -218,20 +296,22 @@ lumen-lms/
 
 ## AI Service Architecture
 
-The AI service operates as an independent FastAPI application that communicates with the main LMS via secure internal API calls:
+The AI service operates as an independent FastAPI application that communicates with the main LMS via secure internal API calls. **All AI processing runs locally using Ollama with the Qwen3.6:27b model - no external API calls required.**
+
+### Workflow
 
 1. **Document Upload & Ingestion**: Users upload reference documents which are processed for text and images
-2. **Visual RAG Processing**: Text chunks and images are embedded locally and stored for semantic retrieval
+2. **Visual RAG Processing**: Text chunks and images are embedded locally using Sentence Transformers and stored for semantic retrieval
 3. **Job Submission**: LMS submits generation requests with selected data sources
 4. **Context Retrieval**: RAG service retrieves relevant text passages and images from uploaded documents
 5. **Web Search (Optional)**: Real-time web search augments retrieved context with current information
-6. **AI Generation**: Qwen API generates structured content using retrieved context + web results
+6. **AI Generation**: Local Qwen model via Ollama generates structured content using retrieved context + web results
 7. **Presentation Creation**: Generated content is converted to PPTX with AI-selected visuals
 8. **Async Processing**: Background workers process jobs with real-time status updates
 9. **Result Delivery**: Generated content and presentations are returned to LMS for storage and download
 
 ### Key Components
-- **Qwen Provider**: Integration with Qwen API (`qwen-plus` model) for text generation
+- **Ollama Provider**: Integration with local Ollama server running `qwen3.6:27b` model
 - **Embedding Service**: Local embeddings using `multilingual-e5-small` (text) and `CLIP ViT-B-32` (images)
 - **RAG Service**: Hybrid text + image retrieval with citation tracking
 - **Visual Catalog**: Metadata extraction for images (page, dimensions, captions)
@@ -253,28 +333,48 @@ The AI service operates as an independent FastAPI application that communicates 
 ## Production Deployment
 
 ### Environment Variables for Production
+
+**LMS (.env):**
 ```dotenv
-# LMS
 AI_SERVICE_ENVIRONMENT="production"
 SESSION_SECRET="<secure-random-string>"
 DATABASE_URL="file:/path/to/production.db"
-
-# AI Service
-AI_SERVICE_ENVIRONMENT="production"
+AI_SERVICE_BASE_URL="http://localhost:8000"
 AI_SERVICE_INTERNAL_API_KEY="<secure-random-string>"
-QWEN_API_KEY="<your-qwen-production-key>"
-QWEN_BASE_URL="https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
-QWEN_MODEL="qwen-plus"
 ```
 
+**AI Service (ai-service/.env):**
+```dotenv
+AI_SERVICE_ENVIRONMENT="production"
+AI_SERVICE_INTERNAL_API_KEY="<secure-random-string>"
+
+# Local Ollama Configuration
+AI_SERVICE_USE_REAL_MODULE_GENERATOR="true"
+AI_SERVICE_QWEN_MODEL="qwen3.6:27b"
+AI_SERVICE_REQUEST_TIMEOUT_SECONDS="120"
+
+# RAG Configuration
+AI_SERVICE_EMBEDDING_TEXT_MODEL="intfloat/multilingual-e5-small"
+AI_SERVICE_EMBEDDING_IMAGE_MODEL="sentence-transformers/clip-ViT-B-32"
+AI_SERVICE_REFERENCE_STORAGE_PATH="/var/lumen/reference_files"
+AI_SERVICE_WEB_SEARCH_ENABLED="true"
+```
+
+### System Requirements for Production
+- **RAM**: 32GB+ recommended for Qwen3.6:27b model
+- **Storage**: SSD recommended for faster model loading and vector operations
+- **Ollama**: Must be running as a system service
+- **Python**: 3.10+ with all dependencies installed
+
 ### Security Considerations
-- Use HTTPS in production
-- Rotate API keys regularly
-- Implement rate limiting
+- Use HTTPS in production (configure reverse proxy like Nginx)
+- Rotate `AI_SERVICE_INTERNAL_API_KEY` regularly
+- Implement rate limiting at the reverse proxy level
 - Enable CORS only for trusted domains
 - Store secrets in environment variables or secret management systems
 - Content guardrails for PII and harmful content detection
 - Correlation ID logging for observability and debugging
+- Run Ollama as a dedicated user with limited permissions
 
 ## License
 

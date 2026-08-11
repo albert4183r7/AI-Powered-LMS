@@ -1,48 +1,49 @@
 ```
-# Dependencies
-.ai-service/venv/
-.ai-service/__pycache__/
-.ai-service/.env
-.ai-service/.env.*
+# Documentation backup/deprecated files
+docs/*.md.DEPRECATED
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Editors
+.vscode/
+.idea/
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.py~
+*.py.class
 .Python
-env/
 venv/
-ENV/
 .venv/
 .env
-.env.*
 .env.local
+.env.*
+.ENV
+.python-version
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
 .coverage
-coverage/
-htmlcov/
-
-# Logs
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
 *.log
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*.tmp
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Build artifacts
-dist/
-build/
-target/
-*.egg-info/
-
-# Testing
+.git/refs/heads/*
+!.git/keep
 .pytest_cache/
 .mypy_cache/
+.hypothesis/
+.coverage*
 ```
