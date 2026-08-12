@@ -5,6 +5,8 @@ import {
   LoaderCircle,
   RefreshCw,
   XCircle,
+  Download,
+  BookOpenCheck,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -20,6 +22,8 @@ interface GenerationProgressPanelProps {
   isCancelling: boolean
   onCancel: () => void
   onRetry: () => void
+  isPublishing?: boolean
+  onPublish?: () => void
 }
 
 const STATUS_TRANSLATION_KEYS: Record<ModuleGenerationJob['status'], string> = {
@@ -48,6 +52,8 @@ export function GenerationProgressPanel({
   isCancelling,
   onCancel,
   onRetry,
+  isPublishing,
+  onPublish,
 }: GenerationProgressPanelProps) {
   if (!generationJob && !requestError) return null
 
@@ -156,9 +162,57 @@ export function GenerationProgressPanel({
                 <p className='mt-2 text-[11px] font-medium text-slate-600'>
                   {t9('ai.presentationPlan', language)}: {lesson.presentation_title}
                 </p>
+                <div className='mt-3 space-y-2'>
+                  <p className='text-xs font-semibold text-slate-800 flex items-center gap-1.5'>
+                    <BookOpenCheck className='size-3.5 text-emerald-600' /> {t9('ai.learningObjectives', language)}:
+                  </p>
+                  <ul className='ml-5 list-disc space-y-1 text-xs text-slate-600'>
+                    {lesson.learning_objectives?.map((objective, i) => (
+                      <li key={i}>{objective}</li>
+                    ))}
+                  </ul>
+                </div>
+                {lesson.presentations && lesson.presentations.length > 0 && (
+                  <div className='mt-4 flex flex-wrap gap-2 border-t border-border/50 pt-3'>
+                    {lesson.presentations.map((presentation, i) => {
+                      const downloadUrl = `${process.env.NEXT_PUBLIC_AI_SERVICE_BASE_URL || ''}${presentation.filePath}`
+                      return (
+                        <a
+                          key={i}
+                          href={downloadUrl}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                          className='inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition-colors'
+                        >
+                          <Download className='size-3.5' />
+                          {presentation.fileName}
+                        </a>
+                      )
+                    })}
+                  </div>
+                )}
               </li>
             ))}
           </ol>
+          {onPublish && (
+            <div className='mt-6 border-t border-border/70 pt-5 flex justify-end'>
+              <Button
+                type='button'
+                onClick={onPublish}
+                disabled={isPublishing}
+                className='w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white'
+              >
+                {isPublishing ? (
+                  <>
+                    <LoaderCircle className='mr-2 size-4 animate-spin' />
+                    {t9('ai.publishing', language) || 'Publishing...'}
+                  </>
+                ) : (
+                  t9('ai.publishModule', language) || 'Save & Publish Draft'
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </section>

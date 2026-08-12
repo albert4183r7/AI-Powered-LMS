@@ -29,6 +29,7 @@ export interface GeneratedLessonPlan {
   description: string
   learning_objectives: string[]
   presentation_title: string
+  presentations?: { fileName: string; filePath: string }[]
 }
 
 export interface GeneratedModulePlan {

@@ -20,6 +20,9 @@ import { useAppStore } from '@/store/app-store'
 export function AiModuleGeneratorView() {
   const storedPrompt = useAppStore((state) => state.aiGenerationPrompt)
   const interfaceLanguage = useAppStore((state) => state.lang) as Lang
+  const user = useAppStore((state) => state.user)
+  const setCurrentPage = useAppStore((state) => state.setCurrentPage)
+  const setSelectedCourseId = useAppStore((state) => state.setSelectedCourseId)
 
   const [prompt, setPrompt] = useState(storedPrompt)
   const [outputLanguage, setOutputLanguage] = useState(
@@ -43,6 +46,7 @@ export function AiModuleGeneratorView() {
     retryGeneration,
     cancelGeneration,
   } = useModuleGenerationJob()
+  const [isPublishing, setIsPublishing] = useState(false)
   const hasActiveJob = generationJob
     ? isActiveGenerationStatus(generationJob.status)
     : false
@@ -57,6 +61,34 @@ export function AiModuleGeneratorView() {
     setReferenceFiles(mergeResult.referenceFiles)
     setValidationErrorKey(mergeResult.errorKey)
     setIsReviewReady(false)
+  }
+
+  const handlePublishDraft = async () => {
+    if (!generationJob?.result || !user?.id) return
+    
+    setIsPublishing(true)
+    try {
+      const res = await fetch('/api/courses/publish-draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          modulePlan: generationJob.result
+        })
+      })
+      
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to publish draft')
+      
+      // Redirect to course editor
+      setSelectedCourseId(data.course.id)
+      setCurrentPage('course-detail')
+    } catch (err) {
+      console.error(err)
+      alert(err instanceof Error ? err.message : 'Publish failed')
+    } finally {
+      setIsPublishing(false)
+    }
   }
 
   const handleReferenceFileRemoved = (referenceFileToRemove: File) => {
@@ -150,6 +182,8 @@ export function AiModuleGeneratorView() {
               isCancelling={isCancelling}
               onCancel={() => void cancelGeneration()}
               onRetry={() => void retryGeneration(referenceFiles)}
+              isPublishing={isPublishing}
+              onPublish={generationJob?.status === 'completed' ? () => void handlePublishDraft() : undefined}
             />
           </div>
 
