@@ -123,7 +123,7 @@ class GeminiClient:
         self,
         texts: list[str],
         *,
-        model: str = "text-embedding-004",
+        model: str = "gemini-embedding-2",
     ) -> list[list[float]]:
         """Create text embeddings using Gemini API."""
         if not texts:

@@ -7,7 +7,7 @@ from app.providers.gemini import GeminiClient
 
 LOGGER = logging.getLogger(__name__)
 
-TEXT_EMBEDDING_MODEL_NAME = "text-embedding-004"
+TEXT_EMBEDDING_MODEL_NAME = "gemini-embedding-2"
 
 
 class EmbeddingService:
