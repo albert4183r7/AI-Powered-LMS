@@ -20,16 +20,6 @@ export async function POST(request: Request) {
     const uploadFormData = new FormData()
     uploadFormData.append('file', referenceFile, referenceFile.name)
 
-    // DEBUG: check if environment variables exist
-    const hasBaseUrl = !!process.env.AI_SERVICE_BASE_URL
-    const hasInternalKey = !!process.env.AI_SERVICE_INTERNAL_API_KEY
-    if (!hasBaseUrl || !hasInternalKey) {
-        return Response.json(
-            { error: `Missing Vercel Env Vars! AI_SERVICE_BASE_URL: ${hasBaseUrl}, AI_SERVICE_INTERNAL_API_KEY: ${hasInternalKey}` },
-            { status: 500 }
-        )
-    }
-
     const uploadedFile = await requestAiServiceMultipart(
       '/v1/references/upload',
       authenticatedUser.id,
