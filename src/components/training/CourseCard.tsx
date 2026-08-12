@@ -16,7 +16,7 @@ const COVER_GRADIENTS = [
   'gradient-gray', 'gradient-cyan', 'gradient-yellow',
 ]
 
-type CourseCardData = Pick<CourseSummary, 'id' | 'title' | 'cover' | 'studentCount' | 'category'> & {
+type CourseCardData = Pick<CourseSummary, 'id' | 'title' | 'cover' | 'studentCount' | 'category' | 'isDummy'> & {
   lessonCount?: number
   isBookmarked?: boolean
 }
@@ -128,10 +128,15 @@ export function CourseCard({
           </div>
         )}
         <div className='pointer-events-none relative z-10 w-full'>
-          <div className='mb-1.5 flex items-center gap-1.5'>
+          <div className='mb-1.5 flex items-center gap-1.5 flex-wrap'>
             <span className='rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-medium text-white/90 backdrop-blur-sm'>
               {category}
             </span>
+            {course.isDummy && (
+              <span className='rounded bg-amber-500/80 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm'>
+                Dummy Module
+              </span>
+            )}
           </div>
           <h3 className='line-clamp-2 text-sm font-semibold text-white drop-shadow-sm'>{course.title}</h3>
         </div>

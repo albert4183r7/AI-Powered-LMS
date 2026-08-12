@@ -8,7 +8,6 @@ from fastapi import FastAPI
 
 from app.api.generations import generation_router
 from app.api.references import references_router
-from app.api.data_sources import router as data_sources_router
 from app.config import AiServiceSettings, get_ai_service_settings
 from app.ingestion.reference_ingestion_service import ReferenceIngestionService
 from app.ingestion.reference_repository import ReferenceRepository
@@ -114,7 +113,6 @@ def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
     application.state.ai_service_settings = ai_service_settings
     application.include_router(generation_router)
     application.include_router(references_router)
-    application.include_router(data_sources_router)
 
     @application.get("/health", tags=["system"])
     def health_check() -> dict[str, str]:

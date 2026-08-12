@@ -17,6 +17,7 @@ export interface CourseSummary {
   lessonCount: number
   status: string
   isBookmarked: boolean
+  isDummy?: boolean
 }
 
 export interface LessonSummary {

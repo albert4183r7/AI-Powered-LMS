@@ -70,7 +70,7 @@ export async function listPublishedCourses(query: CatalogQuery) {
   const courses = await db.course.findMany({
     where,
     orderBy: { createdAt: 'desc' },
-    include: { _count: { select: { lessons: true } } },
+    include: { _count: { select: { lessons: true } }, author: true },
   })
   const courseIds = courses.map((course) => course.id)
   const [learnerCounts, bookmarkedCourseIds] = await Promise.all([
@@ -92,6 +92,7 @@ export async function listPublishedCourses(query: CatalogQuery) {
       lessonCount: course._count.lessons,
       status: course.status,
       isBookmarked: bookmarkedCourseIds.has(course.id),
+      isDummy: course.author?.email === 'instructor@learnova.example',
     }
   })
 
@@ -129,6 +130,7 @@ export async function getCourseDetails(courseId: string, userId?: string) {
   const course = await db.course.findUnique({
     where: { id: courseId },
     include: {
+      author: true,
       lessons: {
         orderBy: { order: 'asc' },
         include: { presentations: { orderBy: { order: 'asc' } } },
@@ -177,6 +179,7 @@ export async function getCourseDetails(courseId: string, userId?: string) {
       })),
       completedLessonIds: completedLessons.map((progressRecord) => progressRecord.lessonId),
       isBookmarked: bookmarkedCourseIds.has(courseId),
+      isDummy: course.author?.email === 'instructor@learnova.example',
     },
   }
 }
