@@ -1,5 +1,3 @@
 #!/bin/bash
-# Start the background worker
-python -m app.jobs.worker &
-# Start the API Server
+# Start the API Server. The background worker is automatically started by FastAPI lifecycle.
 uvicorn app.main:app --host 0.0.0.0 --port $PORT

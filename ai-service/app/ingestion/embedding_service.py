@@ -24,13 +24,24 @@ class EmbeddingService:
         text_model_name: str = TEXT_EMBEDDING_MODEL_NAME,
         image_model_name: str = IMAGE_EMBEDDING_MODEL_NAME,
     ) -> None:
-        LOGGER.info("Loading text embedding model: %s", text_model_name)
-        self._text_model = SentenceTransformer(text_model_name)
-        LOGGER.info("Text embedding model loaded successfully.")
+        self.text_model_name = text_model_name
+        self.image_model_name = image_model_name
+        self._text_model = None
+        self._image_model = None
+
+    def _get_text_model(self):
+        if self._text_model is None:
+            LOGGER.info("Loading text embedding model: %s", self.text_model_name)
+            self._text_model = SentenceTransformer(self.text_model_name)
+            LOGGER.info("Text embedding model loaded successfully.")
+        return self._text_model
         
-        LOGGER.info("Loading image embedding model: %s", image_model_name)
-        self._image_model = SentenceTransformer(image_model_name)
-        LOGGER.info("Image embedding model (CLIP) loaded successfully.")
+    def _get_image_model(self):
+        if self._image_model is None:
+            LOGGER.info("Loading image embedding model: %s", self.image_model_name)
+            self._image_model = SentenceTransformer(self.image_model_name)
+            LOGGER.info("Image embedding model (CLIP) loaded successfully.")
+        return self._image_model
     
     def embed_documents(self, documents: list[str]) -> list[list[float]]:
         """Generate text embeddings for multiple documents.
@@ -46,7 +57,7 @@ class EmbeddingService:
         
         # E5 models expect "passage:" prefix for documents
         prefixed_docs = [f"passage: {doc}" for doc in documents]
-        embeddings = self._text_model.encode(
+        embeddings = self._get_text_model().encode(
             prefixed_docs,
             convert_to_numpy=True,
             normalize_embeddings=True,
@@ -64,7 +75,7 @@ class EmbeddingService:
         """
         # E5 models expect "query:" prefix for queries
         prefixed_query = f"query: {query}"
-        embedding = self._text_model.encode(
+        embedding = self._get_text_model().encode(
             prefixed_query,
             convert_to_numpy=True,
             normalize_embeddings=True,
@@ -83,7 +94,7 @@ class EmbeddingService:
         if not images:
             return []
         
-        embeddings = self._image_model.encode(
+        embeddings = self._get_image_model().encode(
             images,
             convert_to_numpy=True,
             normalize_embeddings=True,
@@ -101,7 +112,7 @@ class EmbeddingService:
         Returns:
             Embedding vector as a list of floats, compatible with image embeddings.
         """
-        embedding = self._image_model.encode(
+        embedding = self._get_image_model().encode(
             query,
             convert_to_numpy=True,
             normalize_embeddings=True,
