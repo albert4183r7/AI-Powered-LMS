@@ -14,12 +14,12 @@ from app.ingestion.reference_repository import ReferenceRepository
 from app.jobs.repository import GenerationJobRepository
 from app.jobs.worker import GenerationWorker
 from app.providers.gemini import GeminiClient
-from app.services.embedding_service import EmbeddingService
-from app.services.fake_module_generator import FakeModuleGenerator
+from app.ingestion.embedding_service import EmbeddingService
+from app.ingestion.rag_service import RagService
 from app.services.module_generator import ModuleGenerator
 from app.services.ecoapi_module_generator import GeminiModuleGenerator
-from app.services.rag_service import RagService
-from app.services.web_search_service import WebSearchService
+from app.services.guardrails_service import GuardrailsService
+from app.services.presentation_generator import PresentationGenerator
 
 LOGGER = logging.getLogger(__name__)
 
@@ -33,21 +33,15 @@ def _build_module_generator(
     on shutdown when the real generator is active.
     """
 
-    if ai_service_settings.use_real_module_generator:
-        if not ai_service_settings.gemini_api_key:
-            raise ValueError("gemini_api_key is required when use_real_module_generator is True")
-            
-        gemini_client = GeminiClient(
-            api_key=ai_service_settings.gemini_api_key.get_secret_value(),
-            model=ai_service_settings.gemini_model,
-        )
-        LOGGER.info("Module generator: GeminiModuleGenerator (Google Gemini provider).")
-        return GeminiModuleGenerator(gemini_client=gemini_client), gemini_client
-
-    LOGGER.info("Module generator: FakeModuleGenerator (no provider calls).")
-    return FakeModuleGenerator(
-        step_delay_seconds=ai_service_settings.fake_generation_delay_seconds,
-    ), None
+    if not ai_service_settings.gemini_api_key:
+        raise ValueError("gemini_api_key is required")
+        
+    gemini_client = GeminiClient(
+        api_key=ai_service_settings.gemini_api_key.get_secret_value(),
+        model=ai_service_settings.gemini_model,
+    )
+    LOGGER.info("Module generator: GeminiModuleGenerator (Google Gemini provider).")
+    return GeminiModuleGenerator(gemini_client=gemini_client), gemini_client
 
 
 def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
@@ -70,11 +64,9 @@ def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
         
         # Initialize embedding service and RAG.
         embedding_service = EmbeddingService()
-        web_search_service = WebSearchService()
         rag_service = RagService(
             reference_repository=reference_repository, 
             embedding_service=embedding_service,
-            web_search_service=web_search_service
         )
         
         reference_ingestion_service = ReferenceIngestionService(
@@ -90,9 +82,20 @@ def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
 
         module_generator, gemini_client = _build_module_generator(ai_service_settings)
 
+        # Guardrails Service
+        guardrails_service = GuardrailsService()
+
+        # Presentation Generator
+        presentation_generator = PresentationGenerator(
+            upload_dir=ai_service_settings.reference_storage_path.parent / "uploads" if ai_service_settings.reference_storage_path else "../../uploads"
+        )
+
+        # Start background worker.
         generation_worker = GenerationWorker(
             generation_job_repository=generation_job_repository,
             module_generator=module_generator,
+            guardrails_service=guardrails_service,
+            presentation_generator=presentation_generator,
             poll_interval_seconds=ai_service_settings.worker_poll_interval_seconds,
         )
         application.state.generation_job_repository = generation_job_repository

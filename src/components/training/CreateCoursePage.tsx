@@ -4,8 +4,9 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useAppStore } from '@/store/app-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, ImagePlus, Plus, FileText, X, Loader2, Save, FileDown, Trash2, Globe, Lock, Pencil, ChevronUp, ChevronDown } from 'lucide-react'
+import { ArrowLeft, ImagePlus, Plus, FileText, X, Loader2, Save, FileDown, Trash2, Globe, Lock, Pencil, ChevronUp, ChevronDown, Sparkles } from 'lucide-react'
 import AddSectionModal from './AddSectionModal'
+import { AiModuleGeneratorView } from './AiModuleGeneratorView'
 import { cn } from '@/lib/utils'
 import { t9, type Lang } from '@/lib/i18n'
 import {
@@ -55,6 +56,7 @@ export function CreateCoursePage() {
 
   const [showRemoveDialog, setShowRemoveDialog] = useState(false)
   const [removingModule, setRemovingModule] = useState(false)
+  const [creationMode, setCreationMode] = useState<'manual' | 'ai'>('manual')
 
   const setEditLesson = useAppStore((s) => s.setEditLesson)
   const editLesson = useAppStore((s) => s.editLesson)
@@ -207,7 +209,33 @@ export function CreateCoursePage() {
           )}
         </div>
 
-        <div className='grid grid-cols-1 lg:grid-cols-5 gap-6'>
+        {!isEditing && (
+          <div className='mb-6 bg-slate-200/50 p-1 rounded-lg inline-flex'>
+            <button
+              onClick={() => setCreationMode('manual')}
+              className={cn(
+                'px-4 py-1.5 text-sm font-medium rounded-md transition-colors',
+                creationMode === 'manual' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              )}
+            >
+              Manual Creation
+            </button>
+            <button
+              onClick={() => setCreationMode('ai')}
+              className={cn(
+                'px-4 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5',
+                creationMode === 'ai' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-emerald-700'
+              )}
+            >
+              <Sparkles className='size-3.5' /> Generate with AI
+            </button>
+          </div>
+        )}
+
+        {creationMode === 'ai' ? (
+          <AiModuleGeneratorView />
+        ) : (
+          <div className='grid grid-cols-1 lg:grid-cols-5 gap-6'>
           <div className='lg:col-span-2 space-y-5'>
             <div className='bg-white rounded-xl border border-border/60 p-5'>
               <h3 className='text-sm font-semibold text-foreground mb-3'>{t9('create.moduleCover', lang)}</h3>
@@ -361,6 +389,7 @@ export function CreateCoursePage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        )}
       </div>
     </div>
   )

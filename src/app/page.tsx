@@ -9,7 +9,6 @@ import { MyLearningPage } from '@/components/training/MyLearningPage'
 import { ProfilePage } from '@/components/training/ProfilePage'
 import { MyCoursesPage } from '@/components/training/MyCoursesPage'
 import { CreateCoursePage } from '@/components/training/CreateCoursePage'
-import { AiModuleGeneratorPage } from '@/components/training/AiModuleGeneratorPage'
 import { CourseDetailPage } from '@/components/training/CourseDetailPage'
 import { SlideClassroom } from '@/components/training/SlideClassroom'
 import { AdminPage } from '@/components/training/AdminPage'
@@ -25,7 +24,7 @@ const pages: Record<string, React.ComponentType> = {
   profile: ProfilePage,
   'my-courses': MyCoursesPage,
   'create-course': CreateCoursePage,
-  'ai-generate': AiModuleGeneratorPage,
+  'ai-generate': CreateCoursePage,
   'course-detail': CourseDetailPage,
   classroom: SlideClassroom,
   admin: AdminPage,

@@ -1,9 +1,12 @@
 """SQLite persistence for reference files and extracted images."""
 
 import sqlite3
+import logging
 from dataclasses import dataclass
 from datetime import timezone, datetime
 from pathlib import Path
+
+LOGGER = logging.getLogger(__name__)
 
 SQLITE_CONNECTION_TIMEOUT_SECONDS = 5
 
@@ -59,6 +62,8 @@ class StoredImageEmbedding:
     image_id: str
     file_id: str
     source_page: int
+    width: int | None
+    height: int | None
     storage_path: str
     embedding_vector: list[float] | None
     caption: str | None
@@ -451,6 +456,8 @@ class ReferenceRepository:
                 image_id=image_id,
                 file_id=file_id,
                 source_page=source_page,
+                width=None,
+                height=None,
                 storage_path=storage_path,
                 embedding_vector=embedding_vector,
                 caption=caption,
@@ -651,10 +658,11 @@ class ReferenceRepository:
                 placeholders = ",".join("?" for _ in file_ids)
                 cursor = connection.execute(
                     f"""
-                    SELECT image_id, file_id, source_page, storage_path, embedding_vector, caption, created_at
-                    FROM image_embeddings
-                    WHERE embedding_vector IS NOT NULL AND file_id IN ({placeholders})
-                    ORDER BY ROWID DESC
+                    SELECT ie.image_id, ie.file_id, ie.source_page, ie.storage_path, ie.embedding_vector, ie.caption, ie.created_at, ei.width, ei.height
+                    FROM image_embeddings ie
+                    LEFT JOIN extracted_images ei ON ie.image_id = ei.image_id
+                    WHERE ie.embedding_vector IS NOT NULL AND ie.file_id IN ({placeholders})
+                    ORDER BY ie.ROWID DESC
                     LIMIT {top_k * 2}
                     """,
                     file_ids,
@@ -662,10 +670,11 @@ class ReferenceRepository:
             else:
                 cursor = connection.execute(
                     f"""
-                    SELECT image_id, file_id, source_page, storage_path, embedding_vector, caption, created_at
-                    FROM image_embeddings
-                    WHERE embedding_vector IS NOT NULL
-                    ORDER BY ROWID DESC
+                    SELECT ie.image_id, ie.file_id, ie.source_page, ie.storage_path, ie.embedding_vector, ie.caption, ie.created_at, ei.width, ei.height
+                    FROM image_embeddings ie
+                    LEFT JOIN extracted_images ei ON ie.image_id = ei.image_id
+                    WHERE ie.embedding_vector IS NOT NULL
+                    ORDER BY ie.ROWID DESC
                     LIMIT {top_k * 2}
                     """
                 )
@@ -695,6 +704,8 @@ class ReferenceRepository:
                     image_id=row["image_id"],
                     file_id=row["file_id"],
                     source_page=row["source_page"],
+                    width=row["width"],
+                    height=row["height"],
                     storage_path=row["storage_path"],
                     embedding_vector=None,  # Don't return full embedding in result
                     caption=row["caption"],
@@ -746,6 +757,7 @@ class ReferenceRepository:
             chunk_index=row["chunk_index"],
             text_content=row["text_content"],
             source_page=row["source_page"],
+            embedding_type="text",
             embedding_vector=embedding_vector,
             created_at=datetime.fromisoformat(row["created_at"]),
         )

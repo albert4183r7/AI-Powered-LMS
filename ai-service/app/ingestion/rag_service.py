@@ -44,6 +44,8 @@ class RetrievedImageContext:
     image_path: str
     source_filename: str
     source_page: int | None
+    width: int | None
+    height: int | None
     caption: str | None
     relevance_score: float
     context_type: str = "image"
@@ -319,6 +321,8 @@ class RagService:
                         image_path=img.storage_path,
                         source_filename=source_filename,
                         source_page=img.source_page,
+                        width=img.width,
+                        height=img.height,
                         caption=img.caption,
                         relevance_score=0.0,
                         context_type="image",

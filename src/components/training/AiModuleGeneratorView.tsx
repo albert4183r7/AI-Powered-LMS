@@ -18,8 +18,7 @@ import { useModuleGenerationJob } from '@/features/ai-generation/use-module-gene
 import { t9, type Lang } from '@/lib/i18n'
 import { useAppStore } from '@/store/app-store'
 
-export function AiModuleGeneratorPage() {
-  const navigateBack = useAppStore((state) => state.navigateBack)
+export function AiModuleGeneratorView() {
   const storedPrompt = useAppStore((state) => state.aiGenerationPrompt)
   const interfaceLanguage = useAppStore((state) => state.lang) as Lang
 
@@ -101,33 +100,24 @@ export function AiModuleGeneratorPage() {
     : ''
 
   return (
-    <main className='min-h-[calc(100vh-3.5rem)] bg-slate-50 px-4 pt-5 pb-24 sm:px-6 sm:pt-7 lg:pb-7'>
-      <div className='mx-auto max-w-5xl'>
-        <button
-          type='button'
-          onClick={navigateBack}
-          className='mb-4 flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground'
-        >
-          <ArrowLeft className='size-4' /> {t9('ai.back', interfaceLanguage)}
-        </button>
-
-        <div className='mb-5 flex items-start gap-3'>
-          <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-emerald-300'>
-            <Sparkles className='size-5' />
-          </div>
-          <div>
-            <h1 className='text-xl font-bold text-slate-950 sm:text-2xl'>
-              {t9('ai.title', interfaceLanguage)}
-            </h1>
-            <p className='mt-1 max-w-2xl text-sm leading-6 text-muted-foreground'>
-              {t9('ai.subtitle', interfaceLanguage)}
-            </p>
-          </div>
+    <div className='mt-6'>
+      <div className='mb-5 flex items-start gap-3'>
+        <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-emerald-300'>
+          <Sparkles className='size-5' />
         </div>
+        <div>
+          <h2 className='text-xl font-bold text-slate-950 sm:text-2xl'>
+            {t9('ai.title', interfaceLanguage)}
+          </h2>
+          <p className='mt-1 max-w-2xl text-sm leading-6 text-muted-foreground'>
+            {t9('ai.subtitle', interfaceLanguage)}
+          </p>
+        </div>
+      </div>
 
-        <form
-          onSubmit={handleReviewRequested}
-          className='grid gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]'
+      <form
+        onSubmit={handleReviewRequested}
+        className='grid gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]'
         >
           <div className='space-y-5'>
             <GenerationPromptSection
@@ -190,7 +180,6 @@ export function AiModuleGeneratorPage() {
             onStartGeneration={() => void handleGenerationStart()}
           />
         </form>
-      </div>
-    </main>
+    </div>
   )
 }

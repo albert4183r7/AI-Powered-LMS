@@ -49,6 +49,7 @@ class LessonPlan(StrictSchema):
     description: str = Field(min_length=10, max_length=1_000)
     learning_objectives: list[str] = Field(min_length=1, max_length=6)
     presentation_title: str = Field(min_length=3, max_length=120)
+    presentations: list[dict] = Field(default_factory=list)
 
     @field_validator("learning_objectives")
     @classmethod

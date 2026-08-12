@@ -6,6 +6,8 @@ from threading import Event, Thread
 from app.jobs.repository import GenerationJobRepository, StoredGenerationJob
 from app.schemas.generation import ModuleGenerationRequest
 from app.services.module_generator import ModuleGenerator
+from app.services.guardrails_service import GuardrailsService, ContentPolicyViolationError
+from app.services.presentation_generator import PresentationGenerator
 
 LOGGER = logging.getLogger(__name__)
 WORKER_SHUTDOWN_TIMEOUT_SECONDS = 5
@@ -18,10 +20,14 @@ class GenerationWorker:
         self,
         generation_job_repository: GenerationJobRepository,
         module_generator: ModuleGenerator,
+        guardrails_service: GuardrailsService,
+        presentation_generator: PresentationGenerator,
         poll_interval_seconds: float,
     ) -> None:
         self._generation_job_repository = generation_job_repository
         self._module_generator = module_generator
+        self._guardrails_service = guardrails_service
+        self._presentation_generator = presentation_generator
         self._poll_interval_seconds = poll_interval_seconds
         self._stop_event = Event()
         self._worker_thread = Thread(
@@ -59,9 +65,31 @@ class GenerationWorker:
                 stored_generation_job.request_json,
             )
             module_plan = self._module_generator.generate(generation_request)
+            
+            # Validate output against content policy
+            self._guardrails_service.validate_plan(module_plan)
+            
+            # Generate presentations for each lesson
+            for lesson in module_plan.lessons:
+                presentation_meta = self._presentation_generator.generate(lesson, module_plan.title)
+                # Ensure the presentations list exists
+                if not hasattr(lesson, 'presentations'):
+                    lesson.presentations = []
+                lesson.presentations.append(presentation_meta)
+            
             self._generation_job_repository.mark_generation_job_completed(
                 stored_generation_job.id,
                 module_plan.model_dump_json(),
+            )
+        except ContentPolicyViolationError as policy_error:
+            LOGGER.error(
+                "Generation job %s blocked by content policy: %s",
+                stored_generation_job.id,
+                str(policy_error),
+            )
+            self._generation_job_repository.mark_generation_job_failed(
+                stored_generation_job.id,
+                "Module generation failed due to safety policy violation. Please revise your request.",
             )
         except Exception as generation_error:
             # Log only the exception type because exception messages may contain input data.
