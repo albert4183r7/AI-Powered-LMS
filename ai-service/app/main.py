@@ -8,46 +8,40 @@ from fastapi import FastAPI
 
 from app.api.generations import generation_router
 from app.api.references import references_router
+from app.api.data_sources import router as data_sources_router
 from app.config import AiServiceSettings, get_ai_service_settings
 from app.ingestion.reference_ingestion_service import ReferenceIngestionService
 from app.ingestion.reference_repository import ReferenceRepository
 from app.jobs.repository import GenerationJobRepository
 from app.jobs.worker import GenerationWorker
-from app.providers.ecoapi import EcoApiClient
-from app.services.ecoapi_module_generator import EcoApiModuleGenerator
+from app.providers.qwen import QwenClient
+from app.services.embedding_service import EmbeddingService
 from app.services.fake_module_generator import FakeModuleGenerator
 from app.services.module_generator import ModuleGenerator
+from app.services.ecoapi_module_generator import QwenModuleGenerator
+from app.services.rag_service import RagService
+from app.services.web_search_service import WebSearchService
 
 LOGGER = logging.getLogger(__name__)
 
 
 def _build_module_generator(
     ai_service_settings: AiServiceSettings,
-) -> tuple[ModuleGenerator, EcoApiClient | None]:
+) -> tuple[ModuleGenerator, QwenClient | None]:
     """Select the real or fake generator based on configuration.
 
-    Returns the generator and an optional EcoApiClient that must be closed
+    Returns the generator and an optional QwenClient that must be closed
     on shutdown when the real generator is active.
     """
 
-    if (
-        ai_service_settings.use_real_module_generator
-        and ai_service_settings.ecoapi_api_key is not None
-    ):
-        ecoapi_client = EcoApiClient(
-            base_url=ai_service_settings.ecoapi_base_url,
-            api_key=ai_service_settings.ecoapi_api_key.get_secret_value(),
-            model=ai_service_settings.ecoapi_chat_model,
-            timeout_seconds=ai_service_settings.ecoapi_request_timeout_seconds,
-        )
-        LOGGER.info("Module generator: EcoApiModuleGenerator (real provider).")
-        return EcoApiModuleGenerator(ecoapi_client=ecoapi_client), ecoapi_client
-
     if ai_service_settings.use_real_module_generator:
-        LOGGER.warning(
-            "use_real_module_generator is enabled but ecoapi_api_key is not set. "
-            "Falling back to FakeModuleGenerator.",
+        # Use local Qwen model via Ollama (no API key needed)
+        qwen_client = QwenClient(
+            model=ai_service_settings.ollama_model,
+            timeout_seconds=ai_service_settings.ollama_request_timeout_seconds,
         )
+        LOGGER.info("Module generator: QwenModuleGenerator (local Ollama provider).")
+        return QwenModuleGenerator(qwen_client=qwen_client), qwen_client
 
     LOGGER.info("Module generator: FakeModuleGenerator (no provider calls).")
     return FakeModuleGenerator(
@@ -72,16 +66,28 @@ def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
             ai_service_settings.jobs_database_path,
         )
         reference_repository.initialize_tables()
+        
+        # Initialize embedding service and RAG.
+        embedding_service = EmbeddingService()
+        web_search_service = WebSearchService()
+        rag_service = RagService(
+            reference_repository=reference_repository, 
+            embedding_service=embedding_service,
+            web_search_service=web_search_service
+        )
+        
         reference_ingestion_service = ReferenceIngestionService(
             reference_repository=reference_repository,
             storage_directory=ai_service_settings.reference_storage_path,
+            rag_service=rag_service,
             max_file_size_bytes=ai_service_settings.reference_max_file_size_bytes,
             min_image_dimension=ai_service_settings.reference_min_image_dimension,
         )
         application.state.reference_repository = reference_repository
         application.state.reference_ingestion_service = reference_ingestion_service
+        application.state.rag_service = rag_service
 
-        module_generator, ecoapi_client = _build_module_generator(ai_service_settings)
+        module_generator, qwen_client = _build_module_generator(ai_service_settings)
 
         generation_worker = GenerationWorker(
             generation_job_repository=generation_job_repository,
@@ -94,8 +100,8 @@ def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
             yield
         finally:
             generation_worker.stop()
-            if ecoapi_client is not None:
-                ecoapi_client.close()
+            if qwen_client is not None:
+                qwen_client.close()
 
     application = FastAPI(
         title=ai_service_settings.app_name,
@@ -106,6 +112,7 @@ def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
     application.state.ai_service_settings = ai_service_settings
     application.include_router(generation_router)
     application.include_router(references_router)
+    application.include_router(data_sources_router)
 
     @application.get("/health", tags=["system"])
     def health_check() -> dict[str, str]:

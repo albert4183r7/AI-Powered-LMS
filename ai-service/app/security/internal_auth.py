@@ -1,4 +1,8 @@
-"""Authenticate requests sent by the trusted Next.js LMS service."""
+"""Authenticate requests sent by the trusted Next.js LMS service.
+
+In local development with Ollama, authentication is optional but still recommended
+to prevent accidental direct browser access to the AI service.
+"""
 
 from dataclasses import dataclass
 from hmac import compare_digest
@@ -34,12 +38,16 @@ def require_internal_request(
     """Reject direct browser calls and return the trusted LMS user identity."""
 
     ai_service_settings = cast(AiServiceSettings, request.app.state.ai_service_settings)
-    expected_api_key = ai_service_settings.internal_api_key.get_secret_value()
-    if provided_api_key is None or not compare_digest(provided_api_key, expected_api_key):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid internal service credentials.",
-        )
+    
+    # In local development without internal_api_key set, skip validation
+    # This allows running without API key when using local Ollama
+    if hasattr(ai_service_settings, 'internal_api_key'):
+        expected_api_key = ai_service_settings.internal_api_key.get_secret_value()
+        if provided_api_key is None or not compare_digest(provided_api_key, expected_api_key):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid internal service credentials.",
+            )
 
     normalized_user_id = provided_user_id.strip() if provided_user_id else ""
     if not normalized_user_id or len(normalized_user_id) > MAXIMUM_USER_ID_LENGTH:

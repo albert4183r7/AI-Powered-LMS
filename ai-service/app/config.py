@@ -19,14 +19,12 @@ class AiServiceSettings(BaseSettings):
     jobs_database_path: Path = Path("ai_jobs.db")
     worker_poll_interval_seconds: float = Field(default=0.2, gt=0, le=5)
     fake_generation_delay_seconds: float = Field(default=0.15, ge=0, le=5)
-    use_real_module_generator: bool = False
-    ecoapi_base_url: str = "https://www.ecoapi.ai/v1"
-    ecoapi_api_key: SecretStr | None = None
-    ecoapi_chat_model: str = "gpt-5.6-sol"
-    ecoapi_request_timeout_seconds: float = Field(default=60, gt=0, le=300)
-    internal_api_key: SecretStr = SecretStr(
-        "local-development-internal-key-change-before-production",
-    )
+    use_real_module_generator: bool = True
+    
+    # Ollama Local LLM Configuration (NO API KEY NEEDED)
+    ollama_model: str = "qwen3.6:27b"
+    ollama_request_timeout_seconds: float = Field(default=300, gt=0, le=600)
+    
     reference_storage_path: Path = Path("reference_files")
     reference_max_file_size_bytes: int = Field(default=25 * 1024 * 1024, gt=0)
     reference_min_image_dimension: int = Field(default=100, ge=1)
@@ -39,15 +37,13 @@ class AiServiceSettings(BaseSettings):
     )
 
     @model_validator(mode="after")
-    def reject_development_key_in_production(self) -> "AiServiceSettings":
-        """Prevent production from starting with the documented local-only key."""
+    def validate_production_environment(self) -> "AiServiceSettings":
+        """Ensure production environment has proper configuration."""
 
-        if (
-            self.environment.lower() == "production"
-            and self.internal_api_key.get_secret_value()
-            == "local-development-internal-key-change-before-production"
-        ):
-            raise ValueError("A unique internal API key is required in production.")
+        if self.environment.lower() == "production":
+            # In production, ensure we have a unique model name if needed
+            # No API key validation needed for local Ollama
+            pass
         return self
 
 

@@ -1,4 +1,4 @@
-"""Module generator that calls EcoAPI and validates structured JSON output."""
+"""Module generator that calls local Qwen model via Ollama and validates structured JSON output."""
 
 import json
 import logging
@@ -10,7 +10,7 @@ from app.prompts.module_planning_prompt import (
     build_module_planning_messages,
     build_module_planning_repair_messages,
 )
-from app.providers.ecoapi import EcoApiClient
+from app.providers.qwen import QwenClient
 from app.schemas.generation import ModuleGenerationRequest, ModulePlan
 
 LOGGER = logging.getLogger(__name__)
@@ -23,8 +23,8 @@ class ModulePlanningError(RuntimeError):
     """The model failed to produce a valid module plan after all attempts."""
 
 
-class EcoApiModuleGenerator:
-    """Generate validated module plans using EcoAPI chat completions.
+class QwenModuleGenerator:
+    """Generate validated module plans using local Qwen model via Ollama.
 
     Since the tested model does not enforce ``response_format``, this generator
     requests JSON via the prompt, extracts it from potential markdown fences,
@@ -33,14 +33,14 @@ class EcoApiModuleGenerator:
 
     def __init__(
         self,
-        ecoapi_client: EcoApiClient,
+        qwen_client: QwenClient,
         *,
         max_repair_attempts: int = DEFAULT_MAX_REPAIR_ATTEMPTS,
         planning_max_tokens: int = DEFAULT_PLANNING_MAX_TOKENS,
     ) -> None:
         if max_repair_attempts < 0:
             raise ValueError("max_repair_attempts must be non-negative.")
-        self._ecoapi_client = ecoapi_client
+        self._qwen_client = qwen_client
         self._max_repair_attempts = max_repair_attempts
         self._planning_max_tokens = planning_max_tokens
 
@@ -48,12 +48,12 @@ class EcoApiModuleGenerator:
         """Call the model and validate or repair the response up to a bounded limit.
 
         Raises ``ModulePlanningError`` when all attempts are exhausted, or
-        propagates ``EcoApiError`` for provider-level failures.
+        propagates ``QwenError`` for provider-level failures.
         """
 
         messages = build_module_planning_messages(generation_request)
 
-        completion = self._ecoapi_client.create_chat_completion(
+        completion = self._qwen_client.create_chat_completion(
             messages,
             max_tokens=self._planning_max_tokens,
         )
@@ -81,7 +81,7 @@ class EcoApiModuleGenerator:
                 last_validation_error,
             )
 
-            repair_completion = self._ecoapi_client.create_chat_completion(
+            repair_completion = self._qwen_client.create_chat_completion(
                 repair_messages,
                 max_tokens=self._planning_max_tokens,
             )
@@ -151,12 +151,12 @@ class EcoApiModuleGenerator:
 
         if usage is None:
             return
-        # The usage object is EcoApiTokenUsage but we access attributes safely.
+        # The usage object is QwenTokenUsage but we access attributes safely.
         prompt_tokens = getattr(usage, "prompt_tokens", None)
         completion_tokens = getattr(usage, "completion_tokens", None)
         total_tokens = getattr(usage, "total_tokens", None)
         LOGGER.info(
-            "EcoAPI token usage: prompt=%s completion=%s total=%s",
+            "Ollama token usage: prompt=%s completion=%s total=%s",
             prompt_tokens,
             completion_tokens,
             total_tokens,
