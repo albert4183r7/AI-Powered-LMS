@@ -2,13 +2,12 @@ import { CheckCircle2, Globe2, ImageIcon } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import type { GenerationDepth } from '@/features/ai-generation/types'
 import { t9, type Lang } from '@/lib/i18n'
 
 interface GenerationOptionsSidebarProps {
   language: Lang
   outputLanguage: string
-  selectedDepth: GenerationDepth
+  selectedDepth: number
   useWebSearch: boolean
   useReferenceVisuals: boolean
   referenceFileCount: number
@@ -118,7 +117,7 @@ export function GenerationOptionsSidebar({
             </div>
             <div className='flex justify-between gap-2'>
               <dt className='text-emerald-700'>{t9('ai.depthLabel', language)}</dt>
-              <dd className='font-medium capitalize text-emerald-950'>{selectedDepth}</dd>
+              <dd className='font-medium text-emerald-950'>{selectedDepth} lessons</dd>
             </div>
             <div className='flex justify-between gap-2'>
               <dt className='text-emerald-700'>{t9('ai.referenceCount', language)}</dt>

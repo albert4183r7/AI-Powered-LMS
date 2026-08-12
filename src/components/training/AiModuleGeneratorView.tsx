@@ -12,7 +12,6 @@ import { isActiveGenerationStatus } from '@/features/ai-generation/generation-jo
 import { mergeValidReferenceFiles } from '@/features/ai-generation/reference-file-validation'
 import type {
   GenerationFormErrorKey,
-  GenerationDepth,
 } from '@/features/ai-generation/types'
 import { useModuleGenerationJob } from '@/features/ai-generation/use-module-generation-job'
 import { t9, type Lang } from '@/lib/i18n'
@@ -26,7 +25,7 @@ export function AiModuleGeneratorView() {
   const [outputLanguage, setOutputLanguage] = useState(
     interfaceLanguage === 'Mandarin' ? 'Mandarin' : 'English',
   )
-  const [selectedDepth, setSelectedDepth] = useState<GenerationDepth>('standard')
+  const [selectedDepth, setSelectedDepth] = useState<number>(5)
   const [useWebSearch, setUseWebSearch] = useState(false)
   const [useReferenceVisuals, setUseReferenceVisuals] = useState(true)
   const [referenceFiles, setReferenceFiles] = useState<File[]>([])

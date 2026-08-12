@@ -1,4 +1,3 @@
-export type GenerationDepth = 'short' | 'standard' | 'comprehensive'
 
 export type GenerationJobStatus =
   | 'queued'
@@ -19,7 +18,7 @@ export type GenerationJobStage =
 export interface ModuleGenerationRequest {
   prompt: string
   output_language: string
-  depth: GenerationDepth
+  depth: number
   use_web_search: boolean
   reference_file_ids: string[]
   use_reference_visuals: boolean

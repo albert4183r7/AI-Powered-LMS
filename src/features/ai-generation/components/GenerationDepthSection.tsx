@@ -1,11 +1,10 @@
 import { cn } from '@/lib/utils'
 import { t9, type Lang } from '@/lib/i18n'
-import type { GenerationDepth } from '@/features/ai-generation/types'
 
 interface GenerationDepthSectionProps {
   language: Lang
-  selectedDepth: GenerationDepth
-  onDepthChange: (depth: GenerationDepth) => void
+  selectedDepth: number
+  onDepthChange: (depth: number) => void
 }
 
 export function GenerationDepthSection({
@@ -13,58 +12,26 @@ export function GenerationDepthSection({
   selectedDepth,
   onDepthChange,
 }: GenerationDepthSectionProps) {
-  const depthOptions: Array<{
-    value: GenerationDepth
-    title: string
-    description: string
-  }> = [
-    {
-      value: 'short',
-      title: t9('ai.depthShort', language),
-      description: t9('ai.depthShortDescription', language),
-    },
-    {
-      value: 'standard',
-      title: t9('ai.depthStandard', language),
-      description: t9('ai.depthStandardDescription', language),
-    },
-    {
-      value: 'comprehensive',
-      title: t9('ai.depthComprehensive', language),
-      description: t9('ai.depthComprehensiveDescription', language),
-    },
-  ]
-
   return (
     <section className='rounded-2xl border border-border/70 bg-white p-4 shadow-sm sm:p-5'>
       <h2 className='text-sm font-semibold'>{t9('ai.depthLabel', language)}</h2>
-      <div className='mt-3 grid gap-2 sm:grid-cols-3'>
-        {depthOptions.map((depthOption) => {
-          const isSelected = selectedDepth === depthOption.value
-          return (
-            <button
-              key={depthOption.value}
-              type='button'
-              onClick={() => onDepthChange(depthOption.value)}
-              className={cn(
-                'rounded-xl border p-3 text-left transition-colors',
-                isSelected
-                  ? 'border-slate-900 bg-slate-950 text-white'
-                  : 'border-border bg-white hover:border-slate-300 hover:bg-slate-50',
-              )}
-            >
-              <span className='block text-sm font-semibold'>{depthOption.title}</span>
-              <span
-                className={cn(
-                  'mt-1 block text-xs leading-5',
-                  isSelected ? 'text-slate-300' : 'text-muted-foreground',
-                )}
-              >
-                {depthOption.description}
-              </span>
-            </button>
-          )
-        })}
+      <div className='mt-5 flex flex-col gap-4'>
+        <div className='flex items-center justify-between text-xs font-semibold text-slate-900'>
+          <span>1</span>
+          <span className='rounded-md bg-emerald-50 px-3 py-1 text-sm text-emerald-700 border border-emerald-200'>
+            {selectedDepth}
+          </span>
+          <span>10</span>
+        </div>
+        <input
+          type='range'
+          min='1'
+          max='10'
+          step='1'
+          value={selectedDepth}
+          onChange={(e) => onDepthChange(parseInt(e.target.value, 10))}
+          className='h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-emerald-600'
+        />
       </div>
     </section>
   )

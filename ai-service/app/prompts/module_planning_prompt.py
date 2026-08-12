@@ -3,13 +3,7 @@
 import json
 
 from app.providers.ecoapi import EcoApiChatMessage
-from app.schemas.generation import GenerationDepth, ModuleGenerationRequest, ModulePlan
-
-LESSON_TARGET_BY_DEPTH: dict[GenerationDepth, int] = {
-    GenerationDepth.SHORT: 3,
-    GenerationDepth.STANDARD: 5,
-    GenerationDepth.COMPREHENSIVE: 8,
-}
+from app.schemas.generation import ModuleGenerationRequest, ModulePlan
 
 MAX_LESSON_COUNT = 12
 
@@ -27,10 +21,6 @@ def build_module_planning_system_prompt() -> str:
         ensure_ascii=False,
     )
 
-    depth_targets = "\n".join(
-        f"  - {depth.value}: {target} lessons" for depth, target in LESSON_TARGET_BY_DEPTH.items()
-    )
-
     return f"""\
 You are a professional curriculum designer for the Lumen Learning Management System.
 
@@ -42,8 +32,7 @@ The JSON must conform exactly to this schema:
 {module_plan_schema}
 
 Rules:
-1. Target lesson count by depth:
-{depth_targets}
+1. Target lesson count: as specified by the user's depth requirement.
 2. The hard maximum is {MAX_LESSON_COUNT} lessons. Never exceed it.
 3. You may produce fewer lessons than the target if the material is genuinely limited, \
 but explain this in the module description.
@@ -65,15 +54,14 @@ def build_module_planning_user_prompt(
 ) -> str:
     """Translate the instructor's validated request into the model's user message."""
 
-    depth_label = generation_request.depth.value
-    target_lessons = LESSON_TARGET_BY_DEPTH[generation_request.depth]
+    target_lessons = generation_request.depth
 
     return f"""\
 Create a module plan with the following requirements:
 
 Instruction: {generation_request.prompt}
 Output language: {generation_request.output_language}
-Depth: {depth_label} (target {target_lessons} lessons)
+Target lesson count: {target_lessons} lessons
 
 Respond with ONLY a valid JSON object.\
 """

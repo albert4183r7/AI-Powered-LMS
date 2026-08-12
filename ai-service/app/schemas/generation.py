@@ -11,12 +11,6 @@ class StrictSchema(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
-class GenerationDepth(StrEnum):
-    """Supported module-size presets."""
-
-    SHORT = "short"
-    STANDARD = "standard"
-    COMPREHENSIVE = "comprehensive"
 
 
 class ModuleGenerationRequest(StrictSchema):
@@ -24,7 +18,7 @@ class ModuleGenerationRequest(StrictSchema):
 
     prompt: str = Field(min_length=20, max_length=5_000)
     output_language: str = Field(min_length=2, max_length=50)
-    depth: GenerationDepth = GenerationDepth.STANDARD
+    depth: int = Field(default=5, ge=1, le=10)
     use_web_search: bool = False
     reference_file_ids: list[str] = Field(default_factory=list, max_length=20)
     use_reference_visuals: bool = True
