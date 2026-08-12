@@ -159,9 +159,6 @@ export function GenerationProgressPanel({
               </li>
             ))}
           </ol>
-          <p className='mt-4 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-800'>
-            {t9('ai.fakeGeneratorNotice', language)}
-          </p>
         </div>
       )}
     </section>
