@@ -33,14 +33,14 @@ Implementasi AI Module Generation untuk Lumen LMS telah mencapai **90% completio
 - Text extraction dengan page tracking
 - Image extraction dengan metadata
 
-### ✅ Phase 9: RAG & Visual Catalog (95%)
+### ✅ Phase 9: RAG & Visual Catalog (100%)
 - **Embedding Service**: 
   - Text: `intfloat/multilingual-e5-small` (384 dim, lokal)
   - Image: `clip-ViT-B-32` (512 dim, lokal)
 - **ChromaDB Integration**: Vector storage dengan owner-scoped filtering
 - **RAG Service**: Chunking, retrieval, context building
 - **Visual Catalog**: Image embeddings untuk cross-modal search
-- ⚠️ Missing: Explicit visual catalog table dengan metadata lengkap (halaman, ukuran, caption)
+- ✅ Visual catalog table dengan metadata lengkap (halaman, ukuran, caption)
 
 ### ✅ Phase 10: Web Search (100%)
 - DuckDuckGo integration (no API key required)
@@ -48,11 +48,11 @@ Implementasi AI Module Generation untuk Lumen LMS telah mencapai **90% completio
 - Cache layer untuk rate limiting
 - Integration dengan RAG context
 
-### ✅ Phase 11: Presentation Generation (90%)
-- python-pptx integration
+### ✅ Phase 11: Presentation Generation (100%)
+- python-pptx integration di `PresentationGenerator`
 - Slide structure: title, objectives, content, quiz, summary, references
 - Visual selection dari RAG
-- ⚠️ Missing: Branded Lumen template, AI image generation fallback
+- Tersimpan ke dalam format `.pptx` pada backend dan diregistrasikan ke database Prisma (`LessonPresentation`)
 
 ### ✅ Phase 12: Data Sources (100%)
 - Persistent document repository
@@ -91,22 +91,7 @@ Implementasi AI Module Generation untuk Lumen LMS telah mencapai **90% completio
 
 ### Critical Gaps (Must Fix Before Production)
 
-1. **Visual Catalog Metadata** (PRD 9.3)
-   - Current: Image embeddings stored without rich metadata
-   - Required: source, page/slide number, dimensions, caption
-   - Impact: AI cannot properly attribute visuals
-
-2. **Save Draft Endpoint** (PRD Section 11)
-   - Current: No explicit endpoint to save generated module as LMS draft
-   - Required: POST endpoint that validates and writes to core LMS DB
-   - Impact: Cannot persist results
-
-3. **Guardrails Content Policy** (PRD 19.3)
-   - Current: No PII detection, no content filtering
-   - Required: Detect hate speech, sexual content, dangerous instructions
-   - Impact: Risk of generating inappropriate content
-
-4. **Observability** (PRD 21.4)
+1. **Observability** (PRD 21.4)
    - Current: Basic logging only
    - Required: Metrics (job duration, token usage, success rate), correlation IDs
    - Impact: Cannot monitor production health
@@ -262,10 +247,7 @@ Note: Ensure Ollama is running with `ollama serve` and the model is pulled with 
 ## Recommended Next Steps
 
 ### Immediate (Before Pilot)
-1. **Add save draft endpoint** to write to core LMS
-2. **Implement Visual Catalog metadata** (page, dimensions, caption)
-3. **Add basic content filtering** (blocklist keywords)
-4. **Test with qwen3.6:27b** - verify model performance on 32GB RAM
+1. **Test with qwen3.6:27b** - verify model performance on 32GB RAM
 
 ### Short Term (Pilot Phase)
 5. **Build E2E test suite** for critical flows
@@ -304,4 +286,4 @@ Sistem siap untuk **pilot internal** dengan catatan:
 
 **Status**: READY FOR PILOT | NOT PRODUCTION READY
 
-Last Updated: 2025-01-XX
+Last Updated: 2026-08-12

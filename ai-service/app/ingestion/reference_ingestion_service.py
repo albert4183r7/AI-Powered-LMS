@@ -117,7 +117,7 @@ class ReferenceIngestionService:
         # Step 3b: Ingest text into RAG system if enabled.
         if self._rag_service and text_chunks:
             try:
-                text_with_pages = [
+                text_with_pages: list[tuple[str, int | None]] = [
                     (chunk.content, chunk.source_page) for chunk in text_chunks
                 ]
                 ingested_count = self._rag_service.ingest_reference_chunks(

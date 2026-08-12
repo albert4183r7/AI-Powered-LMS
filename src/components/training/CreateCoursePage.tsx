@@ -235,7 +235,8 @@ export function CreateCoursePage() {
         {creationMode === 'ai' ? (
           <AiModuleGeneratorView />
         ) : (
-          <div className='grid grid-cols-1 lg:grid-cols-5 gap-6'>
+          <>
+            <div className='grid grid-cols-1 lg:grid-cols-5 gap-6'>
           <div className='lg:col-span-2 space-y-5'>
             <div className='bg-white rounded-xl border border-border/60 p-5'>
               <h3 className='text-sm font-semibold text-foreground mb-3'>{t9('create.moduleCover', lang)}</h3>
@@ -389,6 +390,7 @@ export function CreateCoursePage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+          </>
         )}
       </div>
     </div>
