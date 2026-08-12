@@ -5,6 +5,8 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from app.api.generations import generation_router
 from app.api.references import references_router
@@ -118,6 +120,10 @@ def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
     application.state.ai_service_settings = ai_service_settings
     application.include_router(generation_router)
     application.include_router(references_router)
+    
+    upload_dir = ai_service_settings.reference_storage_path.parent / "uploads" if ai_service_settings.reference_storage_path else Path("../../uploads").resolve()
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    application.mount("/uploads", StaticFiles(directory=str(upload_dir)), name="uploads")
 
     @application.get("/health", tags=["system"])
     def health_check() -> dict[str, str]:

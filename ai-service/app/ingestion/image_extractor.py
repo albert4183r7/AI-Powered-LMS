@@ -95,9 +95,13 @@ def extract_images_from_pptx(
             if not isinstance(shape, Picture):
                 continue
 
-            image = shape.image
-            image_bytes = image.blob
-            content_type = image.content_type or ""
+            try:
+                image = shape.image
+                image_bytes = image.blob
+                content_type = image.content_type or ""
+            except ValueError:
+                # Shape is a Picture but has no embedded image (e.g., it is linked)
+                continue
 
             # Determine format from content type.
             format_map: dict[str, str] = {

@@ -114,8 +114,8 @@ const t: Record<string, Record<Lang, string>> = {
   'ai.draftPreview': { English: 'Generated draft preview', Mandarin: '生成的草稿预览' },
   'ai.presentationPlan': { English: 'Presentation plan', Mandarin: '演示文稿计划' },
   'ai.learningObjectives': { English: 'Learning Objectives', Mandarin: '学习目标' },
-  'ai.publishing': { English: 'Publishing...', Mandarin: '发布中...' },
-  'ai.publishModule': { English: 'Save & Publish Draft', Mandarin: '保存并发布草稿' },
+  'ai.publishing': { English: 'Saving...', Mandarin: '保存中...' },
+  'ai.publishModule': { English: 'Save as Draft', Mandarin: '保存为草稿' },
   'ai.fakeGeneratorNotice': { English: 'This preview was produced by the deterministic fake generator. It used no model, web search, references, or credits, and it has not been saved to the LMS.', Mandarin: '此预览由确定性的模拟生成器创建。它未使用模型、网络搜索、参考资料或额度，也尚未保存到 LMS。' },
 
   // Course Management

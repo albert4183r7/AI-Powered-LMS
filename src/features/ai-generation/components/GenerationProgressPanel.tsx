@@ -175,7 +175,7 @@ export function GenerationProgressPanel({
                 {lesson.presentations && lesson.presentations.length > 0 && (
                   <div className='mt-4 flex flex-wrap gap-2 border-t border-border/50 pt-3'>
                     {lesson.presentations.map((presentation, i) => {
-                      const downloadUrl = `${process.env.NEXT_PUBLIC_AI_SERVICE_BASE_URL || ''}${presentation.filePath}`
+                      const downloadUrl = `/api/ai/download?path=${encodeURIComponent(presentation.filePath)}`
                       return (
                         <a
                           key={i}
