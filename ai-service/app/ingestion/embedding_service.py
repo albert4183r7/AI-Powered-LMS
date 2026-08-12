@@ -3,12 +3,11 @@
 import logging
 from typing import Any
 
-from sentence_transformers import SentenceTransformer
+from app.providers.gemini import GeminiClient
 
 LOGGER = logging.getLogger(__name__)
 
-TEXT_EMBEDDING_MODEL_NAME = "intfloat/multilingual-e5-small"
-IMAGE_EMBEDDING_MODEL_NAME = "clip-ViT-B-32"
+TEXT_EMBEDDING_MODEL_NAME = "text-embedding-004"
 
 
 class EmbeddingService:
@@ -21,27 +20,12 @@ class EmbeddingService:
     
     def __init__(
         self, 
+        gemini_client: GeminiClient,
         text_model_name: str = TEXT_EMBEDDING_MODEL_NAME,
-        image_model_name: str = IMAGE_EMBEDDING_MODEL_NAME,
     ) -> None:
+        self._gemini_client = gemini_client
         self.text_model_name = text_model_name
-        self.image_model_name = image_model_name
-        self._text_model = None
-        self._image_model = None
-
-    def _get_text_model(self):
-        if self._text_model is None:
-            LOGGER.info("Loading text embedding model: %s", self.text_model_name)
-            self._text_model = SentenceTransformer(self.text_model_name)
-            LOGGER.info("Text embedding model loaded successfully.")
-        return self._text_model
-        
-    def _get_image_model(self):
-        if self._image_model is None:
-            LOGGER.info("Loading image embedding model: %s", self.image_model_name)
-            self._image_model = SentenceTransformer(self.image_model_name)
-            LOGGER.info("Image embedding model (CLIP) loaded successfully.")
-        return self._image_model
+        LOGGER.info("EmbeddingService initialized with Gemini API model %s", text_model_name)
     
     def embed_documents(self, documents: list[str]) -> list[list[float]]:
         """Generate text embeddings for multiple documents.
@@ -55,14 +39,11 @@ class EmbeddingService:
         if not documents:
             return []
         
-        # E5 models expect "passage:" prefix for documents
-        prefixed_docs = [f"passage: {doc}" for doc in documents]
-        embeddings = self._get_text_model().encode(
-            prefixed_docs,
-            convert_to_numpy=True,
-            normalize_embeddings=True,
+        # Gemini embeddings don't require prefix like E5
+        return self._gemini_client.create_text_embeddings(
+            texts=documents,
+            model=self.text_model_name
         )
-        return embeddings.tolist()
     
     def embed_query(self, query: str) -> list[float]:
         """Generate a text embedding for a search query.
@@ -73,14 +54,14 @@ class EmbeddingService:
         Returns:
             Embedding vector as a list of floats.
         """
-        # E5 models expect "query:" prefix for queries
-        prefixed_query = f"query: {query}"
-        embedding = self._get_text_model().encode(
-            prefixed_query,
-            convert_to_numpy=True,
-            normalize_embeddings=True,
+        # Gemini embeddings don't require prefix like E5
+        embeddings = self._gemini_client.create_text_embeddings(
+            texts=[query],
+            model=self.text_model_name
         )
-        return embedding.tolist()
+        if not embeddings:
+            return []
+        return embeddings[0]
     
     def embed_images(self, images: list[Any]) -> list[list[float]]:
         """Generate image embeddings using CLIP model.
@@ -93,13 +74,8 @@ class EmbeddingService:
         """
         if not images:
             return []
-        
-        embeddings = self._get_image_model().encode(
-            images,
-            convert_to_numpy=True,
-            normalize_embeddings=True,
-        )
-        return embeddings.tolist()
+        # Disabled to fit in 512MB RAM without PyTorch/CLIP.
+        return []
     
     def embed_query_for_images(self, query: str) -> list[float]:
         """Generate a query embedding compatible with image embeddings (CLIP).
@@ -112,9 +88,5 @@ class EmbeddingService:
         Returns:
             Embedding vector as a list of floats, compatible with image embeddings.
         """
-        embedding = self._get_image_model().encode(
-            query,
-            convert_to_numpy=True,
-            normalize_embeddings=True,
-        )
-        return embedding.tolist()
+        # Image embeddings disabled to fit in 512MB RAM.
+        return []

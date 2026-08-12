@@ -118,3 +118,33 @@ class GeminiClient:
 
         except Exception as e:
             raise GeminiTransientError(f"Gemini API error: {str(e)}") from e
+
+    def create_text_embeddings(
+        self,
+        texts: list[str],
+        *,
+        model: str = "text-embedding-004",
+    ) -> list[list[float]]:
+        """Create text embeddings using Gemini API."""
+        if not texts:
+            return []
+
+        try:
+            response = self._client.models.embed_content(
+                model=model,
+                contents=texts,
+            )
+            
+            # The SDK returns a list of embedding objects, each having a 'values' attribute (list of floats)
+            if not getattr(response, "embeddings", None):
+                # If only one text is passed, or SDK returns differently
+                if hasattr(response, "values"):
+                    return [response.values]
+                if hasattr(response, "embedding"):
+                    return [response.embedding.values]
+                raise GeminiError("Unexpected response format from embedding API.")
+                
+            return [e.values for e in response.embeddings]
+            
+        except Exception as e:
+            raise GeminiTransientError(f"Gemini API error: {str(e)}") from e

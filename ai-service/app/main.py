@@ -33,11 +33,10 @@ def _build_module_generator(
     on shutdown when the real generator is active.
     """
 
-    if not ai_service_settings.gemini_api_key:
-        raise ValueError("gemini_api_key is required")
+    api_key = ai_service_settings.gemini_api_key.get_secret_value() if ai_service_settings.gemini_api_key else "DUMMY_KEY_PLEASE_SET_ENV_VAR"
         
     gemini_client = GeminiClient(
-        api_key=ai_service_settings.gemini_api_key.get_secret_value(),
+        api_key=api_key,
         model=ai_service_settings.gemini_model,
     )
     LOGGER.info("Module generator: GeminiModuleGenerator (Google Gemini provider).")
@@ -62,8 +61,12 @@ def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
         )
         reference_repository.initialize_tables()
         
+        module_generator, gemini_client = _build_module_generator(ai_service_settings)
+        if not gemini_client:
+            raise ValueError("Gemini API is required for embeddings.")
+        
         # Initialize embedding service and RAG.
-        embedding_service = EmbeddingService()
+        embedding_service = EmbeddingService(gemini_client=gemini_client)
         rag_service = RagService(
             reference_repository=reference_repository, 
             embedding_service=embedding_service,
@@ -80,7 +83,6 @@ def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
         application.state.reference_ingestion_service = reference_ingestion_service
         application.state.rag_service = rag_service
 
-        module_generator, gemini_client = _build_module_generator(ai_service_settings)
 
         # Guardrails Service
         guardrails_service = GuardrailsService()
