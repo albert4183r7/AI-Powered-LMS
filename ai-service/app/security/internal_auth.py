@@ -41,7 +41,7 @@ def require_internal_request(
     
     # In local development without internal_api_key set, skip validation
     # This allows running without API key when using local Ollama
-    if hasattr(ai_service_settings, 'internal_api_key'):
+    if getattr(ai_service_settings, 'internal_api_key', None):
         expected_api_key = ai_service_settings.internal_api_key.get_secret_value()
         if provided_api_key is None or not compare_digest(provided_api_key, expected_api_key):
             raise HTTPException(

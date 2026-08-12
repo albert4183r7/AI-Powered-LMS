@@ -20,6 +20,8 @@ class AiServiceSettings(BaseSettings):
     worker_poll_interval_seconds: float = Field(default=0.2, gt=0, le=5)
     fake_generation_delay_seconds: float = Field(default=0.15, ge=0, le=5)
     use_real_module_generator: bool = True
+    internal_api_key: SecretStr | None = None
+
     
     # Gemini API Configuration
     gemini_api_key: SecretStr | None = None
