@@ -21,9 +21,9 @@ class AiServiceSettings(BaseSettings):
     fake_generation_delay_seconds: float = Field(default=0.15, ge=0, le=5)
     use_real_module_generator: bool = True
     
-    # Ollama Local LLM Configuration (NO API KEY NEEDED)
-    ollama_model: str = "qwen3.6:27b"
-    ollama_request_timeout_seconds: float = Field(default=300, gt=0, le=600)
+    # Gemini API Configuration
+    gemini_api_key: SecretStr | None = None
+    gemini_model: str = "gemini-2.5-flash"
     
     reference_storage_path: Path = Path("reference_files")
     reference_max_file_size_bytes: int = Field(default=25 * 1024 * 1024, gt=0)

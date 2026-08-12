@@ -14,11 +14,11 @@ from app.ingestion.reference_ingestion_service import ReferenceIngestionService
 from app.ingestion.reference_repository import ReferenceRepository
 from app.jobs.repository import GenerationJobRepository
 from app.jobs.worker import GenerationWorker
-from app.providers.qwen import QwenClient
+from app.providers.gemini import GeminiClient
 from app.services.embedding_service import EmbeddingService
 from app.services.fake_module_generator import FakeModuleGenerator
 from app.services.module_generator import ModuleGenerator
-from app.services.ecoapi_module_generator import QwenModuleGenerator
+from app.services.ecoapi_module_generator import GeminiModuleGenerator
 from app.services.rag_service import RagService
 from app.services.web_search_service import WebSearchService
 
@@ -27,21 +27,23 @@ LOGGER = logging.getLogger(__name__)
 
 def _build_module_generator(
     ai_service_settings: AiServiceSettings,
-) -> tuple[ModuleGenerator, QwenClient | None]:
+) -> tuple[ModuleGenerator, GeminiClient | None]:
     """Select the real or fake generator based on configuration.
 
-    Returns the generator and an optional QwenClient that must be closed
+    Returns the generator and an optional GeminiClient that must be closed
     on shutdown when the real generator is active.
     """
 
     if ai_service_settings.use_real_module_generator:
-        # Use local Qwen model via Ollama (no API key needed)
-        qwen_client = QwenClient(
-            model=ai_service_settings.ollama_model,
-            timeout_seconds=ai_service_settings.ollama_request_timeout_seconds,
+        if not ai_service_settings.gemini_api_key:
+            raise ValueError("gemini_api_key is required when use_real_module_generator is True")
+            
+        gemini_client = GeminiClient(
+            api_key=ai_service_settings.gemini_api_key.get_secret_value(),
+            model=ai_service_settings.gemini_model,
         )
-        LOGGER.info("Module generator: QwenModuleGenerator (local Ollama provider).")
-        return QwenModuleGenerator(qwen_client=qwen_client), qwen_client
+        LOGGER.info("Module generator: GeminiModuleGenerator (Google Gemini provider).")
+        return GeminiModuleGenerator(gemini_client=gemini_client), gemini_client
 
     LOGGER.info("Module generator: FakeModuleGenerator (no provider calls).")
     return FakeModuleGenerator(
@@ -87,7 +89,7 @@ def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
         application.state.reference_ingestion_service = reference_ingestion_service
         application.state.rag_service = rag_service
 
-        module_generator, qwen_client = _build_module_generator(ai_service_settings)
+        module_generator, gemini_client = _build_module_generator(ai_service_settings)
 
         generation_worker = GenerationWorker(
             generation_job_repository=generation_job_repository,
@@ -100,8 +102,8 @@ def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
             yield
         finally:
             generation_worker.stop()
-            if qwen_client is not None:
-                qwen_client.close()
+            if gemini_client is not None:
+                gemini_client.close()
 
     application = FastAPI(
         title=ai_service_settings.app_name,

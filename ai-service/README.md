@@ -1,6 +1,6 @@
 # Lumen AI Service
 
-Production-ready AI service for intelligent course generation with Visual RAG, multi-modal embeddings, and automated presentation creation. **Runs 100% locally using Ollama with Qwen3.6:27b - no external API keys required.**
+Production-ready AI service for intelligent course generation with Visual RAG, multi-modal embeddings, and automated presentation creation. **Powered by Google Gemini API.**
 
 ## Features
 
@@ -17,7 +17,7 @@ Production-ready AI service for intelligent course generation with Visual RAG, m
 ## Technology Stack
 
 - **Framework**: FastAPI with Pydantic v2
-- **AI Engine**: Ollama with Qwen3.6:27b (local)
+- **AI Engine**: Google Gemini API (gemini-2.5-flash)
 - **Embeddings**: 
   - Text: `intfloat/multilingual-e5-small` (384 dims)
   - Image: `sentence-transformers/clip-ViT-B-32` (512 dims)
@@ -29,16 +29,7 @@ Production-ready AI service for intelligent course generation with Visual RAG, m
 ## Prerequisites
 
 - **Python 3.10+**
-- **Ollama** installed and running with `qwen3.6:27b` model
-- **32GB+ RAM** recommended for the 27B parameter model
-
-### Install Ollama & Model
-
-```bash
-# Install Ollama from https://ollama.ai
-ollama pull qwen3.6:27b
-ollama serve
-```
+- **Google Gemini API Key** (Get one from [Google AI Studio](https://aistudio.google.com/))
 
 ## Quick Start
 
@@ -61,10 +52,10 @@ AI_SERVICE_ENVIRONMENT="development"
 AI_SERVICE_JOBS_DATABASE_PATH="ai_jobs.db"
 AI_SERVICE_WORKER_POLL_INTERVAL_SECONDS="0.2"
 
-# Local Ollama Configuration (NO API KEY NEEDED)
+# Gemini API Configuration
 AI_SERVICE_USE_REAL_MODULE_GENERATOR="true"
-AI_SERVICE_OLLAMA_MODEL="qwen3.6:27b"
-AI_SERVICE_REQUEST_TIMEOUT_SECONDS="120"
+AI_SERVICE_GEMINI_API_KEY="your-gemini-api-key"
+AI_SERVICE_GEMINI_MODEL="gemini-2.5-flash"
 
 # Internal API Security
 # AI_SERVICE_INTERNAL_API_KEY (optional)="your-internal-api-key"
