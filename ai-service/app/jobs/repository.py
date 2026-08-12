@@ -2,7 +2,7 @@
 
 import sqlite3
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import timezone, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -369,7 +369,7 @@ class GenerationJobRepository:
 
     @staticmethod
     def _get_current_utc_timestamp() -> str:
-        return datetime.now(UTC).isoformat()
+        return datetime.now(timezone.utc).isoformat()
 
     @staticmethod
     def _map_database_row_to_generation_job(

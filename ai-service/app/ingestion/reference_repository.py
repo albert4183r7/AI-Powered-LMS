@@ -2,7 +2,7 @@
 
 import sqlite3
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import timezone, datetime
 from pathlib import Path
 
 SQLITE_CONNECTION_TIMEOUT_SECONDS = 5
@@ -334,7 +334,7 @@ class ReferenceRepository:
 
     @staticmethod
     def _now() -> str:
-        return datetime.now(UTC).isoformat()
+        return datetime.now(timezone.utc).isoformat()
 
     @staticmethod
     def _map_reference_row(row: sqlite3.Row) -> StoredReferenceFile:
