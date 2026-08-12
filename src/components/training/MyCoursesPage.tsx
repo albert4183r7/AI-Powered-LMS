@@ -30,10 +30,7 @@ export function MyCoursesPage() {
   const language = useAppStore((state) => state.lang) as Lang
 
   const handleNewModule = () => {
-    setEditorCourseId(null)
-    setEditorTitle('')
-    setEditorCover(null)
-    setEditorSaved(false)
+    useAppStore.getState().resetEditorState()
     navigateTo('create-course')
   }
   const [courses, setCourses] = useState<InstructorCourseSummary[]>([])

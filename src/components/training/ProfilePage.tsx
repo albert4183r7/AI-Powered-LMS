@@ -180,11 +180,7 @@ export function ProfilePage() {
                     {isInstructor() && (
                       <button
                         onClick={() => {
-                          const { setEditorTitle, setEditorCover, setEditorSaved, setEditorCourseId } = useAppStore.getState()
-                          setEditorTitle('')
-                          setEditorCover(null)
-                          setEditorSaved(false)
-                          setEditorCourseId(null)
+                          useAppStore.getState().resetEditorState()
                           navigateTo('create-course')
                         }}
                         className="flex items-center gap-3 p-4 rounded-lg border border-border/60 hover:bg-muted/30 transition-colors text-left"

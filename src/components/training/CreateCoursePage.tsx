@@ -42,6 +42,7 @@ export function CreateCoursePage() {
   const setAddSectionOpen = useAppStore((s) => s.setAddSectionOpen)
   const user = useAppStore((s) => s.user)
   const lang = useAppStore((s) => s.lang) as Lang
+  const currentPage = useAppStore((s) => s.currentPage)
 
   const [saving, setSaving] = useState(false)
   const [lessons, setLessons] = useState<LessonItem[]>([])
@@ -56,7 +57,12 @@ export function CreateCoursePage() {
 
   const [showRemoveDialog, setShowRemoveDialog] = useState(false)
   const [removingModule, setRemovingModule] = useState(false)
-  const [creationMode, setCreationMode] = useState<'manual' | 'ai'>('manual')
+  const [creationMode, setCreationMode] = useState<'manual' | 'ai'>(currentPage === 'ai-generate' ? 'ai' : 'manual')
+
+  useEffect(() => {
+    if (currentPage === 'ai-generate') setCreationMode('ai')
+    else if (currentPage === 'create-course') setCreationMode('manual')
+  }, [currentPage])
 
   const setEditLesson = useAppStore((s) => s.setEditLesson)
   const editLesson = useAppStore((s) => s.editLesson)

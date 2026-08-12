@@ -58,6 +58,7 @@ interface AppState {
   navigateToLesson: (courseId: string, lessonId: string) => void
   navigateBack: () => void
   navigateTo: (page: PageView) => void
+  resetEditorState: () => void
   logout: () => Promise<void>
 }
 
@@ -97,6 +98,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     selectedCourseId: courseId, selectedLessonId: lessonId, currentPage: 'classroom',
   }),
   navigateBack: () => { const p = get().previousPage; set({ currentPage: p || 'home', previousPage: null }) },
+  resetEditorState: () => set({ editorCourseId: null, editorCover: null, editorTitle: '', editorSaved: false, aiGenerationPrompt: '', editLesson: null }),
   logout: async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' })

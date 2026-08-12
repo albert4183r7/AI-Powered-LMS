@@ -34,13 +34,14 @@ export function HomePage() {
   const [aiPromptError, setAiPromptError] = useState('')
 
   const openAiGenerator = () => {
-    const normalizedPrompt = aiPrompt.trim()
-    if (normalizedPrompt.length < 20) {
+    if (aiPrompt.trim().length < 10) {
       setAiPromptError(t9('home.aiPromptMinimum', lang))
       return
     }
-    setAiGenerationPrompt(normalizedPrompt)
-    navigateTo('ai-generate')
+    const state = useAppStore.getState()
+    state.resetEditorState()
+    state.setAiGenerationPrompt(aiPrompt)
+    state.navigateTo('ai-generate')
   }
 
   const fetchCourses = useCallback(async () => {
@@ -106,7 +107,7 @@ export function HomePage() {
                   <BarChart3 className='size-3.5' />{t9('nav.manageModules', lang)}
                 </Button>
                 <Button size='sm' className='bg-slate-900 hover:bg-slate-800 text-white' onClick={() => {
-                  setEditorTitle(''); setEditorCover(null); setEditorSaved(false); setEditorCourseId(null); navigateTo('create-course')
+                  useAppStore.getState().resetEditorState(); useAppStore.getState().navigateTo('create-course')
                 }}>
                   <PenSquare className='size-3.5' />{t9('nav.newModule', lang)}
                 </Button>
