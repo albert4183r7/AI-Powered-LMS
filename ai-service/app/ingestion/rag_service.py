@@ -360,7 +360,11 @@ class RagService:
         try:
             # Load and compute embedding for the image
             image = Image.open(image_path)
-            embedding = self._embedding_service.embed_images([image])[0]
+            embeddings = self._embedding_service.embed_images([image])
+            if not embeddings:
+                LOGGER.warning("Image embeddings are disabled, skipping ingestion for %s", image_id)
+                return False
+            embedding = embeddings[0]
             
             # Store the image embedding
             result = self._reference_repository.store_image_embedding(

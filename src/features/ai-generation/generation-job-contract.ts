@@ -17,7 +17,9 @@ const GENERATION_JOB_STATUSES = new Set<GenerationJobStatus>([
 
 const GENERATION_JOB_STAGES = new Set<GenerationJobStage>([
   'queued',
+  'analyzing_references',
   'planning_module',
+  'generating_presentations',
   'completed',
   'failed',
   'cancelling',
@@ -54,16 +56,14 @@ function parseLessonPlan(value: unknown): GeneratedLessonPlan {
       'lesson.presentation_title',
     ),
     presentations: Array.isArray(lessonPlan.presentations)
-      ? lessonPlan.presentations.map((p) => ({
-          fileName: readString(
-            (p as Record<string, unknown>).fileName,
-            'lesson.presentations.fileName',
-          ),
-          filePath: readString(
-            (p as Record<string, unknown>).filePath,
-            'lesson.presentations.filePath',
-          ),
-        }))
+      ? lessonPlan.presentations
+          .filter((p): p is Record<string, unknown> => 
+            p !== null && typeof p === 'object' && typeof (p as Record<string, unknown>).fileName === 'string' && typeof (p as Record<string, unknown>).filePath === 'string'
+          )
+          .map((p) => ({
+            fileName: p.fileName as string,
+            filePath: p.filePath as string,
+          }))
       : [],
   }
 }

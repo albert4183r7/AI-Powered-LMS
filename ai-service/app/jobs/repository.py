@@ -135,6 +135,32 @@ class GenerationJobRepository:
             else None
         )
 
+    def get_active_generation_jobs_for_owner(
+        self,
+        owner_user_id: str,
+    ) -> list[StoredGenerationJob]:
+        """Return all active (queued, processing, cancelling) jobs for the authenticated LMS user."""
+
+        with self._connect_to_database() as database_connection:
+            active_job_rows = database_connection.execute(
+                """
+                SELECT * FROM generation_jobs
+                WHERE owner_user_id = ? AND status IN (?, ?, ?)
+                ORDER BY created_at DESC
+                """,
+                (
+                    owner_user_id,
+                    GenerationJobStatus.QUEUED.value,
+                    GenerationJobStatus.PROCESSING.value,
+                    GenerationJobStatus.CANCELLING.value,
+                ),
+            ).fetchall()
+        
+        return [
+            self._map_database_row_to_generation_job(row)
+            for row in active_job_rows
+        ]
+
     def get_generation_job(self, generation_job_id: str) -> StoredGenerationJob | None:
         """Return a job by ID for worker and repository-internal operations."""
 
@@ -191,6 +217,31 @@ class GenerationJobRepository:
         if claimed_generation_job_row is None:
             raise RuntimeError("Failed to read the generation job after claiming it.")
         return self._map_database_row_to_generation_job(claimed_generation_job_row)
+
+    def update_generation_job_progress(
+        self,
+        generation_job_id: str,
+        stage: GenerationJobStage,
+        progress: int,
+    ) -> None:
+        """Update the progress of a processing job without finishing it."""
+
+        with self._connect_to_database() as database_connection:
+            database_connection.execute(
+                """
+                UPDATE generation_jobs
+                SET stage = ?, progress = ?, updated_at = ?
+                WHERE id = ? AND status = ?
+                """,
+                (
+                    stage.value,
+                    progress,
+                    self._get_current_utc_timestamp(),
+                    generation_job_id,
+                    GenerationJobStatus.PROCESSING.value,
+                ),
+            )
+            database_connection.commit()
 
     def mark_generation_job_completed(
         self,

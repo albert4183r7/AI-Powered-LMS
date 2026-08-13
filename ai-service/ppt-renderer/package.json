@@ -1,0 +1,18 @@
+{
+  "name": "pptx-ai-kit",
+  "version": "1.0.0",
+  "description": "Reference pipeline for generating designed .pptx decks from LLM-produced content specs.",
+  "scripts": {
+    "icons": "node gen_icons.js",
+    "build": "node build_deck.js content_example.json",
+    "validate": "python3 qa/validate_pptx.py Lesson_Deck_Example.pptx",
+    "render": "bash qa/render_preview.sh Lesson_Deck_Example.pptx preview"
+  },
+  "dependencies": {
+    "pptxgenjs": "^3.12.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.2.1",
+    "sharp": "^0.33.4"
+  }
+}

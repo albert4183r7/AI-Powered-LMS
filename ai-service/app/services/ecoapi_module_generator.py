@@ -10,7 +10,7 @@ from app.prompts.module_planning_prompt import (
     build_module_planning_messages,
     build_module_planning_repair_messages,
 )
-from app.providers.gemini import GeminiClient
+from app.providers.ecoapi import EcoApiClient
 from app.schemas.generation import ModuleGenerationRequest, ModulePlan
 
 LOGGER = logging.getLogger(__name__)
@@ -23,8 +23,8 @@ class ModulePlanningError(RuntimeError):
     """The model failed to produce a valid module plan after all attempts."""
 
 
-class GeminiModuleGenerator:
-    """Generate validated module plans using Google Gemini API.
+class EcoApiModuleGenerator:
+    """Generate validated module plans using EcoAPI chat completions.
 
     Since the tested model does not enforce ``response_format``, this generator
     requests JSON via the prompt, extracts it from potential markdown fences,
@@ -33,14 +33,14 @@ class GeminiModuleGenerator:
 
     def __init__(
         self,
-        gemini_client: GeminiClient,
+        ecoapi_client: EcoApiClient,
         *,
         max_repair_attempts: int = DEFAULT_MAX_REPAIR_ATTEMPTS,
         planning_max_tokens: int = DEFAULT_PLANNING_MAX_TOKENS,
     ) -> None:
         if max_repair_attempts < 0:
             raise ValueError("max_repair_attempts must be non-negative.")
-        self._gemini_client = gemini_client
+        self._ecoapi_client = ecoapi_client
         self._max_repair_attempts = max_repair_attempts
         self._planning_max_tokens = planning_max_tokens
 
@@ -53,7 +53,7 @@ class GeminiModuleGenerator:
 
         messages = build_module_planning_messages(generation_request, rag_context)
 
-        completion = self._gemini_client.create_chat_completion(
+        completion = self._ecoapi_client.create_chat_completion(
             messages,
             max_tokens=self._planning_max_tokens,
         )
@@ -81,7 +81,7 @@ class GeminiModuleGenerator:
                 last_validation_error,
             )
 
-            repair_completion = self._gemini_client.create_chat_completion(
+            repair_completion = self._ecoapi_client.create_chat_completion(
                 repair_messages,
                 max_tokens=self._planning_max_tokens,
             )

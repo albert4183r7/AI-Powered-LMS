@@ -1,92 +1,86 @@
-"""Embedding service using sentence-transformers for local vector generation."""
+"""Embedding service using local HTTP API for vector generation."""
 
 import logging
 from typing import Any
-
-from app.providers.gemini import GeminiClient
+import httpx
 
 LOGGER = logging.getLogger(__name__)
 
-TEXT_EMBEDDING_MODEL_NAME = "gemini-embedding-2"
+TEXT_EMBEDDING_MODEL_NAME = "nomic-embed-text"
+OLLAMA_BASE_URL = "http://localhost:11434/api/embeddings"
 
 
 class EmbeddingService:
-    """Generate embeddings using local sentence-transformers models.
+    """Generate embeddings using a local Ollama API to avoid scipy/numpy DLL hell.
     
-    This service loads both text and image embedding models once and reuses 
-    them for all embedding requests. Supports multilingual text (Indonesian & English)
-    and image embeddings for Visual RAG using CLIP.
+    This service makes direct HTTP calls to the local LLM server.
+    Image embeddings are disabled to save memory.
     """
     
     def __init__(
         self, 
-        gemini_client: GeminiClient,
         text_model_name: str = TEXT_EMBEDDING_MODEL_NAME,
     ) -> None:
-        self._gemini_client = gemini_client
         self.text_model_name = text_model_name
-        LOGGER.info("EmbeddingService initialized with Gemini API model %s", text_model_name)
+        self._http_client = httpx.Client(timeout=60.0)
+        LOGGER.info("EmbeddingService initialized to use local API with model %s", text_model_name)
+    
+    def _get_embedding(self, text: str) -> list[float]:
+        """Fetch embedding from local API gracefully."""
+        try:
+            response = self._http_client.post(
+                OLLAMA_BASE_URL,
+                json={"model": self.text_model_name, "prompt": text},
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get("embedding", [])
+        except Exception as e:
+            LOGGER.warning("Failed to generate embedding from local API: %s", e)
+            # Fallback to zero vector of size 1536 (common embedding size) to prevent crash
+            return [0.0] * 1536
     
     def embed_documents(self, documents: list[str]) -> list[list[float]]:
-        """Generate text embeddings for multiple documents.
-        
-        Args:
-            documents: List of text chunks to embed.
-            
-        Returns:
-            List of embedding vectors as lists of floats.
-        """
+        """Generate text embeddings for multiple documents."""
         if not documents:
             return []
         
-        # Gemini embeddings don't require prefix like E5
-        return self._gemini_client.create_text_embeddings(
-            texts=documents,
-            model=self.text_model_name
-        )
+        embeddings = []
+        for doc in documents:
+            embeddings.append(self._get_embedding(f"passage: {doc}"))
+        return embeddings
     
     def embed_query(self, query: str) -> list[float]:
-        """Generate a text embedding for a search query.
-        
-        Args:
-            query: The query text to embed.
-            
-        Returns:
-            Embedding vector as a list of floats.
-        """
-        # Gemini embeddings don't require prefix like E5
-        embeddings = self._gemini_client.create_text_embeddings(
-            texts=[query],
-            model=self.text_model_name
-        )
-        if not embeddings:
-            return []
-        return embeddings[0]
+        """Generate a text embedding for a search query."""
+        return self._get_embedding(f"query: {query}")
+    
+    def _get_clip_model(self) -> Any:
+        """Lazy load the CLIP model for images."""
+        if not hasattr(self, "_clip_model"):
+            from sentence_transformers import SentenceTransformer
+            LOGGER.info("Loading CLIP model for image embeddings...")
+            self._clip_model = SentenceTransformer("clip-ViT-B-32")
+        return self._clip_model
     
     def embed_images(self, images: list[Any]) -> list[list[float]]:
-        """Generate image embeddings using CLIP model.
-        
-        Args:
-            images: List of PIL Image objects or image file paths.
-            
-        Returns:
-            List of embedding vectors as lists of floats.
-        """
+        """Generate image embeddings using CLIP model."""
         if not images:
             return []
-        # Disabled to fit in 512MB RAM without PyTorch/CLIP.
-        return []
+        
+        try:
+            model = self._get_clip_model()
+            embeddings = model.encode(images)
+            return embeddings.tolist()
+        except Exception as e:
+            LOGGER.error("Failed to generate real image embeddings: %s", e)
+            return [[0.0] * 512 for _ in images]
     
     def embed_query_for_images(self, query: str) -> list[float]:
-        """Generate a query embedding compatible with image embeddings (CLIP).
-        
-        This allows text-to-image search using the same vector space.
-        
-        Args:
-            query: The query text to embed.
-            
-        Returns:
-            Embedding vector as a list of floats, compatible with image embeddings.
-        """
-        # Image embeddings disabled to fit in 512MB RAM.
-        return []
+        """Generate a query embedding compatible with image embeddings."""
+        try:
+            model = self._get_clip_model()
+            embedding = model.encode([query])[0]
+            return embedding.tolist()
+        except Exception as e:
+            LOGGER.error("Failed to generate real query embedding for images: %s", e)
+            return [0.0] * 512

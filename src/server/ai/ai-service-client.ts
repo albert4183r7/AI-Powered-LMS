@@ -5,7 +5,7 @@ import { ApiError } from '@/server/http/api-response'
 const DEVELOPMENT_AI_SERVICE_BASE_URL = 'http://127.0.0.1:8000'
 const DEVELOPMENT_INTERNAL_API_KEY =
   'local-development-internal-key-change-before-production'
-const AI_SERVICE_REQUEST_TIMEOUT_MILLISECONDS = 10_000
+const AI_SERVICE_REQUEST_TIMEOUT_MILLISECONDS = 120_000
 
 interface AiServiceErrorPayload {
   detail?: unknown

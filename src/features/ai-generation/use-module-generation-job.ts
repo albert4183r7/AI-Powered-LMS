@@ -68,6 +68,33 @@ export function useModuleGenerationJob() {
     ? generationJob.id
     : null
 
+  // Hydrate active job on initial mount
+  useEffect(() => {
+    let mounted = true
+    const hydrateActiveJob = async () => {
+      try {
+        const responsePayload = await apiRequest<unknown[]>('/api/ai/generations/active')
+        if (mounted && Array.isArray(responsePayload) && responsePayload.length > 0) {
+          // Just hydrate the first active job we find
+          const activeJob = parseModuleGenerationJob(responsePayload[0])
+          setGenerationJob((prev) => {
+            // only set if we don't already have one to avoid race conditions with the start mechanism
+            if (!prev || !isActiveGenerationStatus(prev.status)) {
+              return activeJob
+            }
+            return prev
+          })
+        }
+      } catch {
+        // ignore errors during hydration
+      }
+    }
+    void hydrateActiveJob()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
   useEffect(() => {
     if (!activeGenerationJobId) return
 

@@ -12,6 +12,7 @@ import { CreateCoursePage } from '@/components/training/CreateCoursePage'
 import { CourseDetailPage } from '@/components/training/CourseDetailPage'
 import { SlideClassroom } from '@/components/training/SlideClassroom'
 import { AdminPage } from '@/components/training/AdminPage'
+import { GlobalAITracker } from '@/components/training/GlobalAITracker'
 import { useAppStore } from '@/store/app-store'
 import { apiRequest } from '@/lib/api-client'
 import type { AuthResponse } from '@/features/users/types'
@@ -96,6 +97,7 @@ export default function App() {
       <div className={`flex-1 ${!isClassroom && !isAuth && !noPadding ? 'pb-14 lg:pb-0' : ''}`}>
         <Page />
       </div>
+      <GlobalAITracker />
     </div>
   )
 }

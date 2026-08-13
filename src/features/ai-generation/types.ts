@@ -9,7 +9,9 @@ export type GenerationJobStatus =
 
 export type GenerationJobStage =
   | 'queued'
+  | 'analyzing_references'
   | 'planning_module'
+  | 'generating_presentations'
   | 'completed'
   | 'failed'
   | 'cancelling'

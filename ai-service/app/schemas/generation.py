@@ -63,3 +63,95 @@ class ModulePlan(StrictSchema):
     description: str = Field(min_length=20, max_length=2_000)
     output_language: str = Field(min_length=2, max_length=50)
     lessons: list[LessonPlan] = Field(min_length=1, max_length=12)
+
+
+from typing import Literal, Union, Annotated
+
+class DeckMeta(StrictSchema):
+    fileName: str = Field(default="Deck.pptx")
+    logoPath: str | None = None
+    logoMarkPath: str | None = None
+
+class TitleSlide(StrictSchema):
+    type: Literal["title"]
+    kicker: str
+    title: str
+    subtitle: str
+    description: str
+    footer: str
+
+class CardItem(StrictSchema):
+    title: str
+    desc: str
+    icon: str | None = None
+
+class CardGridSlide(StrictSchema):
+    type: Literal["cardGrid"]
+    kicker: str
+    title: str
+    subtitle: str
+    page: int
+    items: list[CardItem]
+
+class ProcessStep(StrictSchema):
+    n: str
+    title: str
+    desc: str
+    icon: str | None = None
+
+class ProcessStepperSlide(StrictSchema):
+    type: Literal["processStepper"]
+    kicker: str
+    title: str
+    subtitle: str
+    page: int
+    steps: list[ProcessStep]
+
+class StatItem(StrictSchema):
+    num: str
+    label: str
+
+class Insight(StrictSchema):
+    title: str
+    body: str
+
+class StatCalloutsSlide(StrictSchema):
+    type: Literal["statCallouts"]
+    kicker: str
+    title: str
+    page: int
+    stats: list[StatItem]
+    insight: Insight
+
+class ComparisonTableSlide(StrictSchema):
+    type: Literal["comparisonTable"]
+    kicker: str
+    title: str
+    subtitle: str
+    page: int
+    colA: str
+    colB: str
+    rows: list[list[str]]
+
+class ClosingSlide(StrictSchema):
+    type: Literal["closing"]
+    headline: str
+    body: str
+    footer: str
+
+Slide = Annotated[
+    Union[
+        TitleSlide,
+        CardGridSlide,
+        ProcessStepperSlide,
+        StatCalloutsSlide,
+        ComparisonTableSlide,
+        ClosingSlide
+    ],
+    Field(discriminator="type")
+]
+
+class PresentationPlan(StrictSchema):
+    """The structured content for an entire PowerPoint presentation."""
+    meta: DeckMeta
+    slides: list[Slide] = Field(min_length=3, max_length=20)

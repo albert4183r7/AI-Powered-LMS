@@ -1,0 +1,79 @@
+{
+  "meta": {
+    "fileName": "Lesson_Deck_Example.pptx",
+    "logoPath": null,
+    "logoMarkPath": null,
+    "_comment": "Set logoPath/logoMarkPath to your logo file paths to brand the deck. Left null here so this example runs without requiring logo assets."
+  },
+  "slides": [
+    {
+      "type": "title",
+      "kicker": "Module 1",
+      "title": "Photosynthesis",
+      "subtitle": "How Plants Turn Light Into Energy",
+      "description": "An introduction to the process every green plant uses to survive.",
+      "footer": "Biology · Unit 3"
+    },
+    {
+      "type": "cardGrid",
+      "kicker": "01 · Foundations",
+      "title": "The Three Ingredients",
+      "subtitle": "Every plant needs these to photosynthesize.",
+      "page": 2,
+      "items": [
+        { "title": "Sunlight", "desc": "Provides the energy that drives the whole reaction.", "icon": "assets/icons/sun_navy.png" },
+        { "title": "Water", "desc": "Absorbed through the roots and split for electrons.", "icon": "assets/icons/water_navy.png" },
+        { "title": "Carbon Dioxide", "desc": "Taken in through leaf pores and used to build sugar.", "icon": "assets/icons/leaf_navy.png" }
+      ]
+    },
+    {
+      "type": "processStepper",
+      "kicker": "02 · How It Works",
+      "title": "The Photosynthesis Process",
+      "subtitle": "Four stages, start to finish.",
+      "page": 3,
+      "steps": [
+        { "n": "1", "title": "Light Capture", "desc": "Chlorophyll in the leaf absorbs sunlight.", "icon": "assets/icons/sun_navy.png" },
+        { "n": "2", "title": "Water Splitting", "desc": "Light energy splits water into oxygen and hydrogen.", "icon": "assets/icons/water_navy.png" },
+        { "n": "3", "title": "Energy Transfer", "desc": "Hydrogen and captured energy combine with CO2.", "icon": "assets/icons/bolt_navy.png" },
+        { "n": "4", "title": "Sugar Production", "desc": "The plant produces glucose it can use or store.", "icon": "assets/icons/leaf_navy.png" }
+      ]
+    },
+    {
+      "type": "statCallouts",
+      "kicker": "03 · Why It Matters",
+      "title": "Photosynthesis by the Numbers",
+      "page": 4,
+      "stats": [
+        { "num": "~70%", "label": "Of Earth's oxygen comes from ocean phytoplankton photosynthesis." },
+        { "num": "6 CO2", "label": "Molecules of carbon dioxide needed to produce one glucose molecule." },
+        { "num": "1-2%", "label": "Typical efficiency of sunlight-to-chemical-energy conversion in plants." }
+      ],
+      "insight": {
+        "title": "The bigger picture",
+        "body": "Photosynthesis is the foundation of nearly every food chain on Earth and the process that produced the oxygen atmosphere we depend on."
+      }
+    },
+    {
+      "type": "comparisonTable",
+      "kicker": "04 · Comparison",
+      "title": "Photosynthesis vs. Respiration",
+      "subtitle": "Two processes that mirror each other.",
+      "page": 5,
+      "colA": "Photosynthesis",
+      "colB": "Cellular Respiration",
+      "rows": [
+        ["Inputs", "CO2 + Water + Light", "Glucose + Oxygen"],
+        ["Outputs", "Glucose + Oxygen", "CO2 + Water + Energy"],
+        ["Occurs in", "Chloroplasts", "Mitochondria"],
+        ["Purpose", "Store energy", "Release energy"]
+      ]
+    },
+    {
+      "type": "closing",
+      "headline": "Quiz Time",
+      "body": "Test what you've learned about photosynthesis in the next section.",
+      "footer": "Biology · Unit 3 · Lesson Complete"
+    }
+  ]
+}

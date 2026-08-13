@@ -64,6 +64,30 @@ def create_module_generation(
 
 
 @generation_router.get(
+    "/active",
+    response_model=list[ModuleGenerationJobResponse],
+)
+def get_active_module_generations(
+    request: Request,
+    internal_request_context: Annotated[
+        InternalRequestContext,
+        Depends(require_internal_request),
+    ],
+) -> list[ModuleGenerationJobResponse]:
+    """Return all active generation jobs for the authenticated user."""
+
+    stored_generation_jobs = get_generation_job_repository(
+        request,
+    ).get_active_generation_jobs_for_owner(
+        internal_request_context.user_id,
+    )
+    return [
+        build_generation_job_response(job)
+        for job in stored_generation_jobs
+    ]
+
+
+@generation_router.get(
     "/{generation_job_id}",
     response_model=ModuleGenerationJobResponse,
 )

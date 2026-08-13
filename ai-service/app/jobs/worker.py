@@ -5,6 +5,7 @@ from threading import Event, Thread
 
 from app.jobs.repository import GenerationJobRepository, StoredGenerationJob
 from app.schemas.generation import ModuleGenerationRequest
+from app.schemas.jobs import GenerationJobStage
 from app.services.module_generator import ModuleGenerator
 from app.services.guardrails_service import GuardrailsService, ContentPolicyViolationError
 from app.services.presentation_generator import PresentationGenerator
@@ -70,6 +71,11 @@ class GenerationWorker:
 
             rag_context = ""
             if self._rag_service and generation_request.reference_file_ids:
+                self._generation_job_repository.update_generation_job_progress(
+                    stored_generation_job.id,
+                    GenerationJobStage.ANALYZING_REFERENCES,
+                    25,
+                )
                 try:
                     rag_context = self._rag_service.build_rag_context(
                         query=generation_request.prompt,
@@ -83,14 +89,43 @@ class GenerationWorker:
                         type(rag_error).__name__,
                     )
 
+            if generation_request.use_web_search:
+                self._generation_job_repository.update_generation_job_progress(
+                    stored_generation_job.id,
+                    GenerationJobStage.ANALYZING_REFERENCES,
+                    30,
+                )
+                from app.services.web_search_service import WebSearchService
+                web_search_service = WebSearchService()
+                web_context = web_search_service.search(generation_request.prompt)
+                if web_context:
+                    rag_context = web_context + "\n\n" + rag_context
+
+            self._generation_job_repository.update_generation_job_progress(
+                stored_generation_job.id,
+                GenerationJobStage.PLANNING,
+                40,
+            )
             module_plan = self._module_generator.generate(generation_request, rag_context)
             
             # Validate output against content policy
             self._guardrails_service.validate_plan(module_plan)
             
             # Generate presentations for each lesson
-            for lesson in module_plan.lessons:
-                presentation_meta = self._presentation_generator.generate(lesson, module_plan.title)
+            total_lessons = len(module_plan.lessons)
+            for index, lesson in enumerate(module_plan.lessons):
+                progress = 40 + int((index / total_lessons) * 55)
+                self._generation_job_repository.update_generation_job_progress(
+                    stored_generation_job.id,
+                    GenerationJobStage.GENERATING_PRESENTATIONS,
+                    progress,
+                )
+                presentation_meta = self._presentation_generator.generate(
+                    lesson_plan=lesson, 
+                    course_title=module_plan.title,
+                    module_instruction=generation_request.prompt,
+                    rag_context=rag_context,
+                )
                 # Ensure the presentations list exists
                 if not hasattr(lesson, 'presentations'):
                     lesson.presentations = []

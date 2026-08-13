@@ -15,11 +15,11 @@ from app.ingestion.reference_ingestion_service import ReferenceIngestionService
 from app.ingestion.reference_repository import ReferenceRepository
 from app.jobs.repository import GenerationJobRepository
 from app.jobs.worker import GenerationWorker
-from app.providers.gemini import GeminiClient
+from app.providers.ecoapi import EcoApiClient
 from app.ingestion.embedding_service import EmbeddingService
 from app.ingestion.rag_service import RagService
 from app.services.module_generator import ModuleGenerator
-from app.services.ecoapi_module_generator import GeminiModuleGenerator
+from app.services.ecoapi_module_generator import EcoApiModuleGenerator
 from app.services.guardrails_service import GuardrailsService
 from app.services.presentation_generator import PresentationGenerator
 
@@ -28,21 +28,21 @@ LOGGER = logging.getLogger(__name__)
 
 def _build_module_generator(
     ai_service_settings: AiServiceSettings,
-) -> tuple[ModuleGenerator, GeminiClient | None]:
+) -> tuple[ModuleGenerator, EcoApiClient | None]:
     """Select the real or fake generator based on configuration.
 
-    Returns the generator and an optional GeminiClient that must be closed
+    Returns the generator and an optional EcoApiClient that must be closed
     on shutdown when the real generator is active.
     """
 
-    api_key = ai_service_settings.gemini_api_key.get_secret_value() if ai_service_settings.gemini_api_key else "DUMMY_KEY_PLEASE_SET_ENV_VAR"
-        
-    gemini_client = GeminiClient(
-        api_key=api_key,
-        model=ai_service_settings.gemini_model,
+    ecoapi_client = EcoApiClient(
+        base_url=ai_service_settings.ollama_base_url,
+        api_key="ollama", # Local Ollama ignores this
+        model=ai_service_settings.ollama_model,
+        timeout_seconds=ai_service_settings.request_timeout_seconds,
     )
-    LOGGER.info("Module generator: GeminiModuleGenerator (Google Gemini provider).")
-    return GeminiModuleGenerator(gemini_client=gemini_client), gemini_client
+    LOGGER.info("Module generator: EcoApiModuleGenerator (Ollama provider).")
+    return EcoApiModuleGenerator(ecoapi_client=ecoapi_client), ecoapi_client
 
 
 def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
@@ -63,12 +63,10 @@ def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
         )
         reference_repository.initialize_tables()
         
-        module_generator, gemini_client = _build_module_generator(ai_service_settings)
-        if not gemini_client:
-            raise ValueError("Gemini API is required for embeddings.")
+        module_generator, ecoapi_client = _build_module_generator(ai_service_settings)
         
         # Initialize embedding service and RAG.
-        embedding_service = EmbeddingService(gemini_client=gemini_client)
+        embedding_service = EmbeddingService()
         rag_service = RagService(
             reference_repository=reference_repository, 
             embedding_service=embedding_service,
@@ -91,7 +89,8 @@ def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
 
         # Presentation Generator
         presentation_generator = PresentationGenerator(
-            upload_dir=ai_service_settings.reference_storage_path.parent / "uploads" if ai_service_settings.reference_storage_path else "../../uploads"
+            upload_dir=ai_service_settings.reference_storage_path.parent / "uploads" if ai_service_settings.reference_storage_path else "../../uploads",
+            ecoapi_client=ecoapi_client
         )
 
         # Start background worker.
@@ -109,8 +108,8 @@ def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
             yield
         finally:
             generation_worker.stop()
-            if gemini_client is not None:
-                gemini_client.close()
+            if ecoapi_client is not None:
+                ecoapi_client.close()
 
     application = FastAPI(
         title=ai_service_settings.app_name,

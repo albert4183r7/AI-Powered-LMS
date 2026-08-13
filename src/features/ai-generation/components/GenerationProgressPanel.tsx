@@ -37,7 +37,9 @@ const STATUS_TRANSLATION_KEYS: Record<ModuleGenerationJob['status'], string> = {
 
 const STAGE_TRANSLATION_KEYS: Record<ModuleGenerationJob['stage'], string> = {
   queued: 'ai.stageQueued',
+  analyzing_references: 'ai.stageAnalyzing',
   planning_module: 'ai.stagePlanning',
+  generating_presentations: 'ai.stageGeneratingPPTs',
   completed: 'ai.stageCompleted',
   failed: 'ai.stageFailed',
   cancelling: 'ai.stageCancelling',

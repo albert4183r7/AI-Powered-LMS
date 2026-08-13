@@ -1,0 +1,52 @@
+[
+  {
+    "content": "Building the End-to-End AI Ecosystem\nFrom Infrastructure to Intelligent Agents — Connecting Global AI Technology with Local Partners\nC O M P A N Y P R O F I L E\n1",
+    "source_page": 1,
+    "source_location": "Page 1"
+  },
+  {
+    "content": "W H O W E A R E\n“Eco” means Ecosystem\nEcoTech helps AI technology companies expand into overseas markets. We \nconnect software and hardware, and partner with local players on the ground \n— together building an AI ecosystem that truly takes root.\nOverseas Expansion\nWe help AI technology companies enter and \ngrow in new markets.\nSoftware + Hardware\nWe connect the full technology stack, not just \none layer of it.\nLocal Partners\nWe work with on-the-ground partners to \nmake deployment real.\nOne Ecosystem,\nFour Layers Deep\nData Center · Server · LLM · Agent — EcoTech delivers a complete \nportfolio from the ground up.\n2",
+    "source_page": 2,
+    "source_location": "Page 2"
+  },
+  {
+    "content": "O U R A P P R O A C H\nAn End-to-End AI Ecosystem, Layer by Layer\nTo build a real AI ecosystem, EcoTech provides a complete product portfolio — from the foundational infrastructure to the intelligent applications \nrunning on top of it.\n1\nAI Data Center\nPower system & Cooling system\n2\nServers\nAI & traditional server hardware\n3\nLarge Language Models\nOpen & closed-source model access\n4\nAgents\nIntelligent products that get work done\n3",
+    "source_page": 3,
+    "source_location": "Page 3"
+  },
+  {
+    "content": "L A Y E R 1 · F O U N D A T I O N\nAI Data Center\nWhy power density changes everything\nTraditional DC\n< 1 MW, single block\nAI Data Center\n+3 MW\n+3 MW\n+3 MW\n+ ...\n3 MW is the traditional UPS/breaker building block. AI facilities scale by adding \nmore of it as GPU rack demand grows — 3, 6, 9 MW and beyond, not one fixed \nsize.\nThat modular, ever-growing power demand means: heavier electrical load to \nmanage, more heat to remove, and greater risk if the grid drops. That is exactly the \ngap our four product lines close.\nUPS + Battery\nReliable backup power for \nheavier, more critical loads\nPrecision Air \nConditioning (PAC)\nRemoves the extra heat that \nhigh-density racks generate\nGenerator Sets\nContinuity when the grid fails \n— the stakes are higher now\nWe sell the power and cooling backbone that scales with the facility, block by block.\n4",
+    "source_page": 4,
+    "source_location": "Page 4"
+  },
+  {
+    "content": "L A Y E R 2 · C O M P U T E\nServers\nWith power and cooling in place, the next layer is the hardware that actually runs AI workloads.\nAI Server\nGPU + NPU + CPU\nTraditional Server\nCPU only\nWe sell both — matched to what each workload actually needs.\nA global chip & memory shortage\nNVIDIA leads GPUs; Huawei leads AI accelerators (Ascend NPUs); Samsung leads \nmemory — all in constrained supply. We sell the servers built around them, so this \nscarcity still shapes what we can deliver.\nServer brands in the market\nLeading server brands available in today’s market.\nDell\nHP\nSupermicro\nGigabyte\nHuakun\n5",
+    "source_page": 5,
+    "source_location": "Page 5"
+  },
+  {
+    "content": "L A Y E R 3 · I N T E L L I G E N C E\nLarge Language Models\nHardware needs a brain. This is where AI compute becomes AI capability.\nClosed-Source\nClaude · Gemini · OpenAI · Doubao\nEach is tied to one cloud: AWS–Claude, GCP–\nGemini, Azure–OpenAI. Great for API use, but not \navailable for private deployment.\nOpen-Source\nQwen · DeepSeek · GLM · Kimi\nNot locked to one cloud — can be self-hosted for \nfree on infrastructure the client controls. Note: \nseveral open-source families (e.g. Qwen, \nDeepSeek) also ship a closed-source hosted version \nof the same model.\nThe key insight\nBecause closed-source models are bound to a single cloud, \nthey can’t be privately deployed. So when a client needs \non-premise or private deployment, what we actually sell is \nopen-source model deployment and integration — not the \nmodel itself.\nThree ways to buy tokens for closed-source models\nOpen-source is free to self-host — these channels are for paid, closed-source access.\n1\nDirect from the model provider\n2\nVia OpenRouter\n3\nVia a cloud provider\n6",
+    "source_page": 6,
+    "source_location": "Page 6"
+  },
+  {
+    "content": "L A Y E R 4 · A P P L I C A T I O N\nAgents\nThe model becomes useful once it can act. An agent turns one instruction into a finished workflow.\nExample: User says, “I want to buy clothes”\nReads purchase history, search history & OOTD\nAuto-recommends and prepares the order\nHuman confirms payment\nOur five agent scenarios\nMyVoice.AI\nAI contact center\nYusys Technologies\nVibe coding agent\nAI Transcend\nCustomer engagement agent\nTalkCloud\nOnline class platform\nRivereTech\nCredit card, risk control & agent \nplatform\n7\nOpen Shopping App",
+    "source_page": 7,
+    "source_location": "Page 7"
+  },
+  {
+    "content": "O U R P A R T N E R S\nWorking Across the Full Stack\nEcoTech partners with leading names at every layer we sell — from data center hardware to applications.\n8",
+    "source_page": 8,
+    "source_location": "Page 8"
+  },
+  {
+    "content": "O U R V I S I O N\nBeyond Reselling — Toward Our Own Agent Platform\nThe four-layer portfolio is not the destination — it is how we get there.\nSell Data Center\n→\nSell Servers\n→\nSell LLM Token\n→\nSell Agents\n→\nOur Own\nAgent Platform\nEvery product we sell today builds the experience, relationships, and knowledge that get us there — one step at a time.\n9",
+    "source_page": 9,
+    "source_location": "Page 9"
+  },
+  {
+    "content": "Thank You\nEcoTech — Connecting AI Infrastructure to Local Ecosystems\n10",
+    "source_page": 10,
+    "source_location": "Page 10"
+  }
+]

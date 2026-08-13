@@ -23,7 +23,9 @@ class GenerationJobStage(StrEnum):
     """User-facing progress stages for module generation."""
 
     QUEUED = "queued"
+    ANALYZING_REFERENCES = "analyzing_references"
     PLANNING = "planning_module"
+    GENERATING_PRESENTATIONS = "generating_presentations"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLING = "cancelling"

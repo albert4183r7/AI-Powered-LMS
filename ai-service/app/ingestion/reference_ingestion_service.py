@@ -114,6 +114,26 @@ class ReferenceIngestionService:
             )
             extracted_text_path = str(text_file_path)
 
+        # Step 4: Extract images.
+        extracted_images = self._safe_extract_images(validated_file)
+        image_paths: dict[str, str] = {}
+        if extracted_images:
+            images_directory = file_storage_directory / "images"
+            image_paths = save_extracted_images(extracted_images, images_directory)
+
+        # Step 5: Persist metadata (MUST be done before RAG ingestion for ownership checks and FK).
+        stored_reference = self._reference_repository.store_reference_file(
+            file_id=file_id,
+            owner_user_id=owner_user_id,
+            original_filename=validated_file.original_filename,
+            content_type=validated_file.content_type,
+            size_bytes=validated_file.size_bytes,
+            storage_path=str(stored_file_path),
+            extracted_text_path=extracted_text_path,
+            extracted_text_length=total_text_length,
+            extracted_image_count=len(extracted_images),
+        )
+
         # Step 3b: Ingest text into RAG system if enabled.
         if self._rag_service and text_chunks:
             try:
@@ -137,14 +157,6 @@ class ReferenceIngestionService:
                     e,
                     exc_info=True,
                 )
-                # Continue without failing the entire ingestion
-
-        # Step 4: Extract images.
-        extracted_images = self._safe_extract_images(validated_file)
-        image_paths: dict[str, str] = {}
-        if extracted_images:
-            images_directory = file_storage_directory / "images"
-            image_paths = save_extracted_images(extracted_images, images_directory)
 
         # Step 4b: Ingest images into Visual RAG if enabled.
         if self._rag_service and extracted_images:
@@ -175,20 +187,9 @@ class ReferenceIngestionService:
                     e,
                     exc_info=True,
                 )
-                # Continue without failing the entire ingestion
 
-        # Step 5: Persist metadata.
-        stored_reference = self._reference_repository.store_reference_file(
-            file_id=file_id,
-            owner_user_id=owner_user_id,
-            original_filename=validated_file.original_filename,
-            content_type=validated_file.content_type,
-            size_bytes=validated_file.size_bytes,
-            storage_path=str(stored_file_path),
-            extracted_text_path=extracted_text_path,
-            extracted_text_length=total_text_length,
-            extracted_image_count=len(extracted_images),
-        )
+        # Image metadata persistence is separate
+
 
         for image in extracted_images:
             image_storage_path = image_paths.get(image.image_id, "")

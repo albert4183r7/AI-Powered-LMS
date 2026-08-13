@@ -22,10 +22,10 @@ class AiServiceSettings(BaseSettings):
     use_real_module_generator: bool = True
     internal_api_key: SecretStr | None = None
 
-    
-    # Gemini API Configuration
-    gemini_api_key: SecretStr | None = None
-    gemini_model: str = "gemini-2.5-flash"
+    # Ollama Local Configuration
+    ollama_model: str = "qwen2.5:7b"
+    ollama_base_url: str = "http://localhost:11434/v1"
+    request_timeout_seconds: float = 600.0
     
     reference_storage_path: Path = Path("reference_files")
     reference_max_file_size_bytes: int = Field(default=25 * 1024 * 1024, gt=0)
