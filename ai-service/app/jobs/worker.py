@@ -126,9 +126,6 @@ class GenerationWorker:
                     module_instruction=generation_request.prompt,
                     rag_context=rag_context,
                 )
-                # Ensure the presentations list exists
-                if not hasattr(lesson, 'presentations'):
-                    lesson.presentations = []
                 lesson.presentations.append(presentation_meta)
             
             self._generation_job_repository.mark_generation_job_completed(
@@ -151,6 +148,7 @@ class GenerationWorker:
                 "Module generation job failed with error type %s.",
                 type(generation_error).__name__,
                 extra={"generation_job_id": stored_generation_job.id},
+                exc_info=True,
             )
             self._generation_job_repository.mark_generation_job_failed(
                 stored_generation_job.id,
