@@ -183,14 +183,17 @@ Your entire output MUST be the final, valid JSON object starting with `{` and en
                     max_tokens=4000,
                     response_format=response_format,
                 )
-                # When using response_format with json_schema, content should already be valid JSON
                 content = completion.content
                 if not content:
                     raise ValueError("LLM returned empty content")
+                
+                # Extract JSON from response (handle cases where LLM adds text/markdown)
+                json_text = _extract_json_from_fences(content)
+                
                 try:
-                    return PresentationPlan.model_validate_json(content)
+                    return PresentationPlan.model_validate_json(json_text)
                 except Exception as validation_error:
-                    LOGGER.error(f"LLM returned invalid JSON on attempt {attempt+1}: {validation_error}\nRaw Content: {completion.content}")
+                    LOGGER.error(f"LLM returned invalid JSON on attempt {attempt+1}: {validation_error}\nRaw Content (first 500 chars): {content[:500]}")
                     if attempt == max_retries - 1:
                         raise
             except Exception as e:
