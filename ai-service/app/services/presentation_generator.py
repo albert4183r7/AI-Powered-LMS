@@ -38,6 +38,24 @@ def _extract_json_from_fences(text: str) -> str:
     return stripped_content
 
 
+def _get_presentation_validation_error_message(json_text: str) -> str:
+    """Produce a user-safe validation error message for repair prompting."""
+    try:
+        PresentationPlan.model_validate_json(json_text)
+        return "No error."
+    except ValidationError as validation_error:
+        # Check if this is a JSON parsing error vs schema validation error
+        errors = validation_error.errors()
+        if errors and errors[0].get('type') == 'json_invalid':
+            return "The response is not valid JSON."
+        error_messages = [
+            f"  - {error['loc']}: {error['msg']}" for error in errors[:5]
+        ]
+        return "Schema validation errors:\n" + "\n".join(error_messages)
+    except (ValueError, json.JSONDecodeError):
+        return "The response is not valid JSON."
+
+
 class PresentationGenerator:
     """Generate .pptx files based on lesson plans using LLM and pptx-ai-kit."""
 
@@ -164,7 +182,7 @@ Your entire output MUST be the final, valid JSON object starting with `{` and en
             EcoApiChatMessage(role="user", content=user_prompt),
         ]
         
-        # Define the response format to enforce JSON output using structured outputs
+        # Define the response format as a hint only (not guaranteed to be enforced by local models)
         response_format = {
             "type": "json_schema",
             "json_schema": {
@@ -175,13 +193,26 @@ Your entire output MUST be the final, valid JSON object starting with `{` and en
         }
         
         max_retries = 3
+        last_error_message = ""
         for attempt in range(max_retries):
             try:
+                current_messages = list(messages)
+                if last_error_message:
+                    current_messages.append(
+                        EcoApiChatMessage(
+                            role="user",
+                            content=(
+                                f"Your previous JSON was invalid: {last_error_message}\n"
+                                "Return the corrected, COMPLETE JSON object only."
+                            ),
+                        )
+                    )
+
                 LOGGER.info(f"Generating PPT contents via LLM for lesson: {lesson_plan.title} (Attempt {attempt+1}/{max_retries})")
                 completion = self._ecoapi_client.create_chat_completion(
-                    messages,
+                    current_messages,
                     max_tokens=4000,
-                    response_format=response_format,
+                    response_format=response_format,  # hint only, not guaranteed
                 )
                 content = completion.content
                 if not content:
@@ -192,8 +223,13 @@ Your entire output MUST be the final, valid JSON object starting with `{` and en
                 
                 try:
                     return PresentationPlan.model_validate_json(json_text)
-                except Exception as validation_error:
-                    LOGGER.error(f"LLM returned invalid JSON on attempt {attempt+1}: {validation_error}\nRaw Content (first 500 chars): {content[:500]}")
+                except ValidationError as validation_error:
+                    last_error_message = "; ".join(
+                        f"{e['loc']}: {e['msg']}" for e in validation_error.errors()[:5]
+                    )
+                    LOGGER.error(
+                        f"LLM returned invalid JSON on attempt {attempt+1}: {last_error_message}"
+                    )
                     if attempt == max_retries - 1:
                         raise
             except Exception as e:
