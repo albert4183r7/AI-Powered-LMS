@@ -8,7 +8,7 @@ from app.schemas.generation import ModuleGenerationRequest, ModulePlan
 class ModuleGenerator(Protocol):
     """Generate a validated module plan from an instructor request."""
 
-    def generate(self, generation_request: ModuleGenerationRequest) -> ModulePlan:
+    def generate(self, generation_request: ModuleGenerationRequest, rag_context: str = "") -> ModulePlan:
         """Create a module plan without deciding how generation is performed."""
 
         ...

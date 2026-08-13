@@ -51,17 +51,24 @@ but explain this in the module description.
 
 def build_module_planning_user_prompt(
     generation_request: ModuleGenerationRequest,
+    rag_context: str = "",
 ) -> str:
-    """Translate the instructor's validated request into the model's user message."""
+    """Translate the instructor's validated request into the model's user message.
+
+    When ``rag_context`` is provided, it is injected so the model grounds its
+    plan in the retrieved reference material rather than relying solely on
+    the instruction.
+    """
 
     target_lessons = generation_request.depth
+    context_block = f"\n\n{rag_context}\n" if rag_context.strip() else ""
 
     return f"""\
 Create a module plan with the following requirements:
 
 Instruction: {generation_request.prompt}
 Output language: {generation_request.output_language}
-Target lesson count: {target_lessons} lessons
+Target lesson count: {target_lessons} lessons{context_block}
 
 Respond with ONLY a valid JSON object.\
 """
@@ -69,6 +76,7 @@ Respond with ONLY a valid JSON object.\
 
 def build_module_planning_messages(
     generation_request: ModuleGenerationRequest,
+    rag_context: str = "",
 ) -> list[EcoApiChatMessage]:
     """Assemble the complete message sequence for one planning request."""
 
@@ -79,7 +87,7 @@ def build_module_planning_messages(
         ),
         EcoApiChatMessage(
             role="user",
-            content=build_module_planning_user_prompt(generation_request),
+            content=build_module_planning_user_prompt(generation_request, rag_context),
         ),
     ]
 
@@ -96,7 +104,7 @@ def build_module_planning_repair_messages(
     and asks for a corrected version.
     """
 
-    original_messages = build_module_planning_messages(generation_request)
+    original_messages = build_module_planning_messages(generation_request, rag_context="")
 
     repair_messages = [
         *original_messages,

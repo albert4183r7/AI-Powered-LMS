@@ -44,14 +44,14 @@ class GeminiModuleGenerator:
         self._max_repair_attempts = max_repair_attempts
         self._planning_max_tokens = planning_max_tokens
 
-    def generate(self, generation_request: ModuleGenerationRequest) -> ModulePlan:
+    def generate(self, generation_request: ModuleGenerationRequest, rag_context: str = "") -> ModulePlan:
         """Call the model and validate or repair the response up to a bounded limit.
 
         Raises ``ModulePlanningError`` when all attempts are exhausted, or
         propagates ``QwenError`` for provider-level failures.
         """
 
-        messages = build_module_planning_messages(generation_request)
+        messages = build_module_planning_messages(generation_request, rag_context)
 
         completion = self._gemini_client.create_chat_completion(
             messages,

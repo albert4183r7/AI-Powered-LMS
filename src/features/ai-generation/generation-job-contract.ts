@@ -53,6 +53,18 @@ function parseLessonPlan(value: unknown): GeneratedLessonPlan {
       lessonPlan.presentation_title,
       'lesson.presentation_title',
     ),
+    presentations: Array.isArray(lessonPlan.presentations)
+      ? lessonPlan.presentations.map((p) => ({
+          fileName: readString(
+            (p as Record<string, unknown>).fileName,
+            'lesson.presentations.fileName',
+          ),
+          filePath: readString(
+            (p as Record<string, unknown>).filePath,
+            'lesson.presentations.filePath',
+          ),
+        }))
+      : [],
   }
 }
 

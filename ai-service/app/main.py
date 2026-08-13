@@ -101,6 +101,7 @@ def create_app(settings: AiServiceSettings | None = None) -> FastAPI:
             guardrails_service=guardrails_service,
             presentation_generator=presentation_generator,
             poll_interval_seconds=ai_service_settings.worker_poll_interval_seconds,
+            rag_service=rag_service,
         )
         application.state.generation_job_repository = generation_job_repository
         generation_worker.start()

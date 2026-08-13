@@ -193,6 +193,7 @@ class RagService:
         file_ids: list[str] | None = None,
         top_k: int | None = None,
         include_images: bool = True,
+        owner_user_id: str = "",
     ) -> list[RetrievedContext]:
         """Retrieve the most relevant text chunks and optionally images for a query.
         
@@ -229,8 +230,8 @@ class RagService:
         # Build retrieved text contexts with citation info
         for chunk in similar_chunks:
             reference = self._reference_repository.get_reference_file_for_owner(
-                chunk.file_id, 
-                ""  # Owner check already done in search_similar_chunks
+                chunk.file_id,
+                owner_user_id,
             )
             source_filename = reference.original_filename if reference else "Unknown"
             
@@ -259,7 +260,7 @@ class RagService:
                 for img in similar_images:
                     reference = self._reference_repository.get_reference_file_for_owner(
                         img.file_id,
-                        "",
+                        owner_user_id,
                     )
                     source_filename = reference.original_filename if reference else "Unknown"
                     
@@ -387,6 +388,7 @@ class RagService:
         query: str,
         file_ids: list[str] | None = None,
         max_context_length: int = 2000,
+        owner_user_id: str = "",
     ) -> str:
         """Build a formatted context string for injection into model prompts.
         
@@ -398,7 +400,7 @@ class RagService:
         Returns:
             Formatted context string with citations.
         """
-        contexts = self.retrieve_relevant_context(query, file_ids)
+        contexts = self.retrieve_relevant_context(query, file_ids, owner_user_id=owner_user_id)
         
         if not contexts:
             return ""
