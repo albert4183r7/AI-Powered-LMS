@@ -186,6 +186,7 @@ class EcoApiClient:
         tools: Sequence[dict[str, object]] = (),
         tool_choice: str | dict[str, object] | None = None,
         max_tokens: int | None = None,
+        response_format: dict[str, object] | None = None,
     ) -> EcoApiChatCompletion:
         """Create one completion without claiming unsupported schema enforcement."""
 
@@ -204,6 +205,8 @@ class EcoApiClient:
             request_payload["tool_choice"] = tool_choice
         if max_tokens is not None:
             request_payload["max_tokens"] = max_tokens
+        if response_format is not None:
+            request_payload["response_format"] = response_format
 
         try:
             provider_response = self._http_client.post(
@@ -250,11 +253,16 @@ class EcoApiClient:
             if parsed_response.usage
             else None
         )
+        
+        # Handle structured output via response_format (json_schema mode)
+        # When using response_format with json_schema, some providers return the JSON in content directly
+        content = first_choice.message.content
+        
         return EcoApiChatCompletion(
             id=parsed_response.id,
             model=parsed_response.model,
             finish_reason=first_choice.finish_reason,
-            content=first_choice.message.content,
+            content=content,
             tool_calls=tuple(
                 EcoApiToolCall(
                     id=tool_call.id,

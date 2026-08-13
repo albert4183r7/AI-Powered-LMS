@@ -125,7 +125,7 @@ class PresentationGenerator:
             "You are an expert presentation designer and curriculum developer. "
             "Your task is to generate the structure and content for a PowerPoint presentation for a specific lesson.\n"
             "You must respond ONLY with a valid JSON object matching the requested schema. "
-            "DO NOT explain the schema. DO NOT add any conversational text. "
+            "DO NOT explain the schema. DO NOT add any conversational text, markdown code fences, or explanations. "
             "Your entire response MUST be the final JSON object containing the presentation plan.\n\n"
             f"Here are the DESIGN RULES you must follow when choosing slide layouts:\n\n{design_rules}"
         )
@@ -150,11 +150,11 @@ IMPORTANT INSTRUCTION:
 Do NOT output a partial snippet or just one slide. You MUST output the COMPLETE JSON object representing the entire PresentationPlan, including BOTH the "meta" and "slides" arrays, exactly matching the schema.
 """
 
-        schema_snippet = json.dumps(PresentationPlan.model_json_schema(), indent=2)
-        user_prompt += f"\n\n--- REQUIRED JSON SCHEMA ---\n```json\n{schema_snippet}\n```\n"
+        # Note: The schema is now passed via response_format parameter, not in the prompt
         user_prompt += """
 --- FINAL INSTRUCTIONS ---
 Your task is to generate a concrete JSON instance that represents a 3-10 slide presentation for this specific lesson.
+The JSON schema has been provided to the model separately.
 DO NOT summarize or explain the schema. DO NOT output conversational text.
 Your entire output MUST be the final, valid JSON object starting with `{` and ending with `}`.
 """
@@ -164,6 +164,16 @@ Your entire output MUST be the final, valid JSON object starting with `{` and en
             EcoApiChatMessage(role="user", content=user_prompt),
         ]
         
+        # Define the response format to enforce JSON output using structured outputs
+        response_format = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "PresentationPlan",
+                "strict": True,
+                "schema": PresentationPlan.model_json_schema(),
+            },
+        }
+        
         max_retries = 3
         for attempt in range(max_retries):
             try:
@@ -171,12 +181,19 @@ Your entire output MUST be the final, valid JSON object starting with `{` and en
                 completion = self._ecoapi_client.create_chat_completion(
                     messages,
                     max_tokens=4000,
+                    response_format=response_format,
                 )
-                content = _extract_json_from_fences(completion.content)
+                content = completion.content
+                if not content:
+                    raise ValueError("LLM returned empty content")
+                
+                # Extract JSON from response (handle cases where LLM adds text/markdown)
+                json_text = _extract_json_from_fences(content)
+                
                 try:
-                    return PresentationPlan.model_validate_json(content)
+                    return PresentationPlan.model_validate_json(json_text)
                 except Exception as validation_error:
-                    LOGGER.error(f"LLM returned invalid JSON on attempt {attempt+1}: {validation_error}\nRaw Content: {completion.content}\nExtracted: {content}")
+                    LOGGER.error(f"LLM returned invalid JSON on attempt {attempt+1}: {validation_error}\nRaw Content (first 500 chars): {content[:500]}")
                     if attempt == max_retries - 1:
                         raise
             except Exception as e:
